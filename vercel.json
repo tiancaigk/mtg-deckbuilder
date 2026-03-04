@@ -12,6 +12,10 @@
   ],
   "routes": [
     {
+      "src": "/supabase\\.js",
+      "dest": "/supabase.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
