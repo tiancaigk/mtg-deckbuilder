@@ -1518,7 +1518,159 @@
         max-height: none;
       }
     }
+    
+    /* 登录 UI 样式 */
+    .auth-buttons {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    
+    .auth-btn {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      color: var(--white);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .auth-btn:hover {
+      background: rgba(255,255,255,0.3);
+      border-color: var(--white);
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(255,255,255,0.1);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+    }
+    
+    .user-email {
+      font-size: 0.875rem;
+      color: var(--white);
+    }
+    
+    .sync-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .sync-status.synced::before {
+      content: '✅';
+    }
+    
+    .sync-status.syncing::before {
+      content: '🔄';
+    }
+    
+    .auth-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .auth-modal-content {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 400px;
+      width: 90%;
+      border: 1px solid var(--border);
+    }
+    
+    .auth-modal-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .auth-modal-tab {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+    }
+    
+    .auth-modal-tab.active {
+      color: var(--text);
+      border-bottom-color: var(--primary);
+    }
+    
+    .auth-form input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .auth-form input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .auth-form button {
+      width: 100%;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: var(--white);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .auth-form button:hover {
+      background: var(--primary-dark);
+    }
+    
+    .auth-message {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      text-align: center;
+    }
+    
+    .auth-message.success {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--secondary);
+    }
+    
+    .auth-message.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
   </style>
+  
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js?v=202603042233"></script>
 </head>
 <body>
   <!-- 头部 -->
@@ -1530,6 +1682,9 @@
       </div>
       <div class="deck-info">
         <button class="deck-manage-btn" onclick="showDeckManager()" title="卡组管理">📁</button>
+        <div class="auth-buttons">
+          <button class="auth-btn" onclick="openAuthModal()">🔐 登录/注册</button>
+        </div>
       </div>
     </div>
   </header>
@@ -1809,7 +1964,7 @@ Sideboard
     }
 
     // 保存当前卡组
-    function saveCurrentDeck() {
+    async function saveCurrentDeck() {
       const name = document.getElementById('deckNameInput').value.trim();
       if (!name) {
         showToast('请输入卡组名称', 'error');
@@ -1821,12 +1976,43 @@ Sideboard
         return;
       }
 
-      const savedDecks = getSavedDecks();
-      const timestamp = new Date().toISOString();
-      
       // 更新当前卡组名称
       deck.name = name;
       updateDeckNameDisplay();
+
+      // 如果已登录，保存到云端
+      if (currentUser && window.mtgAuth) {
+        const syncStatusEl = document.getElementById('syncStatus');
+        if (syncStatusEl) {
+          syncStatusEl.className = 'sync-status syncing';
+          syncStatusEl.textContent = '同步中...';
+        }
+
+        const deckData = {
+          name: name,
+          main: deck.main,
+          side: deck.side,
+          isPublic: false
+        };
+
+        const result = await mtgAuth.saveDeck(deckData);
+
+        if (syncStatusEl) {
+          if (result.success) {
+            syncStatusEl.className = 'sync-status synced';
+            syncStatusEl.textContent = '已同步到云端';
+            showToast('卡组已保存到云端！', 'success');
+          } else {
+            syncStatusEl.className = 'sync-status';
+            syncStatusEl.textContent = '同步失败';
+            showToast('云端保存失败：' + result.error, 'error');
+          }
+        }
+      }
+
+      // 同时保存到本地（离线可用）
+      const savedDecks = getSavedDecks();
+      const timestamp = new Date().toISOString();
       
       savedDecks[name] = {
         ...deck,
@@ -1834,7 +2020,11 @@ Sideboard
       };
 
       localStorage.setItem('mtg-saved-decks', JSON.stringify(savedDecks));
-      showToast(`卡组 "${name}" 已保存！`, 'success');
+      
+      if (!currentUser) {
+        showToast(`卡组 "${name}" 已保存（本地）`, 'success');
+      }
+      
       renderSavedDecks();
     }
 
@@ -2954,6 +3144,240 @@ Sideboard
           showToast('切换失败', 'error');
         });
     }
+  </script>
+  <!-- 登录弹窗 -->
+  <div class="auth-modal" id="authModal">
+    <div class="auth-modal-content">
+      <div class="auth-modal-tabs">
+        <div class="auth-modal-tab active" onclick="switchAuthTab('login')">登录</div>
+        <div class="auth-modal-tab" onclick="switchAuthTab('signup')">注册</div>
+      </div>
+      
+      <div id="loginForm" class="auth-form">
+        <input type="email" id="loginEmail" placeholder="邮箱" required>
+        <input type="password" id="loginPassword" placeholder="密码" required>
+        <button onclick="handleLogin()">登录</button>
+        <div id="loginMessage"></div>
+      </div>
+      
+      <div id="signupForm" class="auth-form" style="display: none;">
+        <input type="email" id="signupEmail" placeholder="邮箱" required>
+        <input type="password" id="signupPassword" placeholder="密码（至少 6 位）" required>
+        <button onclick="handleSignup()">注册</button>
+        <div id="signupMessage"></div>
+      </div>
+      
+      <button onclick="closeAuthModal()" style="margin-top: 1rem; background: none; border: none; color: var(--text-muted); cursor: pointer; width: 100%;">关闭</button>
+    </div>
+  </div>
+
+  <script>
+    // ============ 认证 UI ============
+    
+    let currentUser = null;
+    
+    // 确保函数在全局作用域
+    window.openAuthModal = function() {
+      const modal = document.getElementById('authModal');
+      if (modal) {
+        modal.style.display = 'flex';
+      } else {
+        console.error('Auth modal not found');
+      }
+    };
+    
+    window.closeAuthModal = function() {
+      const modal = document.getElementById('authModal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    };
+    
+    window.switchAuthTab = function(tab) {
+      document.querySelectorAll('.auth-modal-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (tab === 'login') {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('signupForm').style.display = 'none';
+      } else {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('signupForm').style.display = 'block';
+      }
+    };
+    
+    window.handleLogin = async function() {
+      // 重试机制：等待 mtgAuth 加载
+      let retries = 0;
+      while (!window.mtgAuth && retries < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+      }
+      
+      if (!window.mtgAuth) {
+        const messageDiv = document.getElementById('loginMessage');
+        messageDiv.className = 'auth-message error';
+        messageDiv.textContent = 'Supabase 未初始化，请刷新页面';
+        return;
+      }
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const messageDiv = document.getElementById('loginMessage');
+      
+      if (!email || !password) {
+        messageDiv.className = 'auth-message error';
+        messageDiv.textContent = '请输入邮箱和密码';
+        return;
+      }
+      
+      const result = await mtgAuth.signIn(email, password);
+      
+      if (result.success) {
+        messageDiv.className = 'auth-message success';
+        messageDiv.textContent = '登录成功！';
+        setTimeout(() => {
+          closeAuthModal();
+          messageDiv.textContent = '';
+        }, 1000);
+      } else {
+        messageDiv.className = 'auth-message error';
+        messageDiv.textContent = result.error;
+      }
+    };
+    
+    window.handleSignup = async function() {
+      // 重试机制：等待 mtgAuth 加载
+      let retries = 0;
+      while (!window.mtgAuth && retries < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+      }
+      
+      if (!window.mtgAuth) {
+        const messageDiv = document.getElementById('signupMessage');
+        messageDiv.className = 'auth-message error';
+        messageDiv.textContent = 'Supabase 未初始化，请刷新页面';
+        return;
+      }
+      
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+      const messageDiv = document.getElementById('signupMessage');
+      
+      if (!email || !password) {
+        messageDiv.className = 'auth-message error';
+        messageDiv.textContent = '请输入邮箱和密码';
+        return;
+      }
+      
+      if (password.length < 6) {
+        messageDiv.className = 'auth-message error';
+        messageDiv.textContent = '密码至少 6 位';
+        return;
+      }
+      
+      const result = await mtgAuth.signUp(email, password);
+      
+      if (result.success) {
+        messageDiv.className = 'auth-message success';
+        messageDiv.textContent = '注册成功！请检查邮箱验证（如需要）';
+        setTimeout(() => {
+          closeAuthModal();
+          messageDiv.textContent = '';
+        }, 2000);
+      } else {
+        messageDiv.className = 'auth-message error';
+        messageDiv.textContent = result.error;
+      }
+    };
+    
+    window.handleLogout = async function() {
+      if (window.mtgAuth && confirm('确定要登出吗？')) {
+        await mtgAuth.signOut();
+        currentUser = null;
+        updateAuthUI();
+      }
+    };
+    
+    // 初始化认证状态
+    window.addEventListener('DOMContentLoaded', async () => {
+      // 监听认证状态
+      if (window.mtgAuth) {
+        mtgAuth.onAuthStateChange((event, user) => {
+          currentUser = user;
+          updateAuthUI();
+          
+          if (user) {
+            // 登录后自动加载云端卡组
+            loadCloudDecks();
+          }
+        });
+        
+        // 检查是否已登录
+        const user = await mtgAuth.getCurrentUser();
+        currentUser = user;
+        updateAuthUI();
+      }
+    });
+    
+    // 更新认证 UI
+    function updateAuthUI() {
+      const authContainer = document.querySelector('.auth-buttons');
+      if (!authContainer) return;
+      
+      if (currentUser) {
+        authContainer.innerHTML = `
+          <div class="user-info">
+            <span class="user-email">${currentUser.email}</span>
+            <div class="sync-status synced" id="syncStatus">已同步</div>
+          </div>
+          <button class="auth-btn" onclick="openAuthModal()">☁️ 云端卡组</button>
+          <button class="auth-btn" onclick="handleLogout()">登出</button>
+        `;
+      } else {
+        authContainer.innerHTML = `
+          <button class="auth-btn" onclick="openAuthModal()">🔐 登录/注册</button>
+        `;
+      }
+    }
+    
+    // ============ 云端卡组管理 ============
+    
+    window.loadCloudDecks = async function() {
+      if (!currentUser || !window.mtgAuth) return;
+      
+      const result = await mtgAuth.loadDecks();
+      
+      if (result.success && result.decks.length > 0) {
+        console.log('云端卡组:', result.decks);
+        // TODO: 显示云端卡组列表
+      }
+    };
+    
+    // 点击弹窗外部关闭
+    const modalEl = document.getElementById('authModal');
+    if (modalEl) {
+      modalEl.addEventListener('click', (e) => {
+        if (e.target.id === 'authModal') {
+          closeAuthModal();
+        }
+      });
+    }
+    
+    // 调试信息
+    console.log('✅ 认证 UI 已初始化');
+    console.log('mtgAuth:', window.mtgAuth ? '已加载' : '未加载');
+    console.log('openAuthModal:', typeof window.openAuthModal);
+    console.log('authModal 元素:', document.getElementById('authModal') ? '存在' : '不存在');
+    
+    // 测试：3 秒后自动打开登录窗口（仅用于调试）
+    // setTimeout(() => {
+    //   console.log('测试：尝试打开登录窗口');
+    //   if (typeof window.openAuthModal === 'function') {
+    //     window.openAuthModal();
+    //   }
+    // }, 3000);
   </script>
 </body>
 </html>
