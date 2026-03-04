@@ -2195,18 +2195,53 @@ Sideboard
       `;
 
       try {
-        let response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&lang=zh-Hans`);
+        // Scryfall 搜索策略：
+        // 1. 先尝试模糊搜索（支持中文）
+        // 2. 如果没有结果，尝试英文名搜索
+        // 3. 如果还是没结果，尝试卡牌编号
+        
+        console.log('🔍 搜索卡牌:', query);
+        
+        // 策略 1: 模糊搜索（支持中文）
+        let response = await fetch(
+          `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=set`
+        );
         let data = await response.json();
+        console.log('🔍 搜索结果:', data.total_cards, '张');
 
+        // 策略 2: 如果没有结果，尝试精确搜索
         if (data.total_cards === 0) {
-          response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`);
-          data = await response.json();
+          console.log('🔍 尝试精确搜索...');
+          response = await fetch(
+            `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`
+          );
+          if (response.ok) {
+            const card = await response.json();
+            data = { total_cards: 1, data: [card] };
+          }
         }
 
+        // 策略 3: 显示错误
+        if (data.total_cards === 0 || (data.data && data.data.length === 0)) {
+          resultsDiv.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🔍</div>
+              <div class="empty-state-text">未找到卡牌</div>
+              <div class="empty-state-sub">试试英文名或卡牌编号</div>
+            </div>
+          `;
+          return;
+        }
+
+        // 处理分页（最多加载 2 页）
         if (data.has_more) {
-          const nextResponse = await fetch(data.next_page);
-          const nextData = await nextResponse.json();
-          data.data = [...data.data, ...nextData.data];
+          try {
+            const nextResponse = await fetch(data.next_page);
+            const nextData = await nextResponse.json();
+            data.data = [...data.data, ...nextData.data];
+          } catch (e) {
+            console.log('⚠️ 分页加载失败，仅显示第一页');
+          }
         }
 
         displaySearchResults(data.data || []);
@@ -2236,13 +2271,17 @@ Sideboard
       }
 
       resultsDiv.innerHTML = cards.map(card => {
+        // 优先使用中文名称（如果有）
+        const displayName = card.printed_name || card.name;
+        const displayType = card.printed_type_line || card.type_line;
+        
         const manaCost = parseManaCost(card.mana_cost);
         return `
-          <div class="card-item" onclick="addToDeck('${card.id}', '${card.name}')">
-            <img class="card-image" src="${card.image_uris?.normal || 'https://cards.scryfall.io/back.jpg'}" alt="${card.name}">
+          <div class="card-item" onclick="addToDeck('${card.id}', '${displayName.replace(/'/g, "\\'")}')">
+            <img class="card-image" src="${card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal || 'https://cards.scryfall.io/back.jpg'}" alt="${displayName}">
             <div class="card-details">
-              <div class="card-name">${card.name}</div>
-              <div class="card-type">${card.type_line}</div>
+              <div class="card-name">${displayName}</div>
+              <div class="card-type">${displayType}</div>
               <div class="card-mana">
                 ${manaCost.map(m => `<div class="mana-symbol mana-${m.toLowerCase()}">${m}</div>`).join('')}
               </div>
