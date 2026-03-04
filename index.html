@@ -473,6 +473,34 @@
       border-color: var(--primary);
       box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
     }
+    
+    .search-options {
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+    
+    .checkbox-label:hover {
+      color: var(--text);
+    }
 
     .search-btn {
       background: var(--primary);
@@ -1699,6 +1727,12 @@
           🔍 搜索
         </button>
       </div>
+      <div class="search-options">
+        <label class="checkbox-label">
+          <input type="checkbox" id="chineseOnlyCheckbox">
+          <span>只显示中文版</span>
+        </label>
+      </div>
       <div class="search-filters" id="colorFilters">
         <div class="filter-chip active" data-color="">
           <span>全部</span>
@@ -2186,6 +2220,12 @@ Sideboard
       const query = document.getElementById('searchInput').value.trim();
       if (!query) return;
 
+      // 读取"只显示中文版"复选框状态
+      const checkbox = document.getElementById('chineseOnlyCheckbox');
+      const chineseOnly = checkbox ? checkbox.checked : false;
+      console.log('🔍 复选框状态:', checkbox ? '已找到' : '未找到');
+      console.log('🔍 中文搜索模式:', chineseOnly ? '只显示中文 ✓' : '显示所有版本 ✗');
+
       const resultsDiv = document.getElementById('searchResults');
       resultsDiv.innerHTML = `
         <div class="loading">
@@ -2195,39 +2235,108 @@ Sideboard
       `;
 
       try {
-        // Scryfall 搜索策略：
-        // 1. 先尝试模糊搜索（支持中文）
-        // 2. 如果没有结果，尝试英文名搜索
-        // 3. 如果还是没结果，尝试卡牌编号
-        
         console.log('🔍 搜索卡牌:', query);
         
-        // 策略 1: 模糊搜索（支持中文）
-        let response = await fetch(
-          `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=set`
-        );
-        let data = await response.json();
-        console.log('🔍 搜索结果:', data.total_cards, '张');
-
-        // 策略 2: 如果没有结果，尝试精确搜索
-        if (data.total_cards === 0) {
-          console.log('🔍 尝试精确搜索...');
+        // Scryfall 搜索策略：
+        // 1. 判断是否包含中文
+        // 2. 中文：使用 lang:zhs 限定 + fuzzy 匹配
+        // 3. 英文：使用普通搜索
+        
+        const hasChinese = /[\u4e00-\u9fa5]/.test(query);
+        let response, data;
+        
+        if (hasChinese) {
+          // 中文搜索
+          if (chineseOnly) {
+            // 只显示中文版
+            console.log('🔍 检测到中文 + 只显示中文版，使用 lang:cs 搜索...');
+            response = await fetch(
+              `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}+lang:cs&unique=prints&order=set`
+            );
+            data = await response.json();
+            console.log('🔍 lang:cs 搜索结果:', data.total_cards, '张');
+          } else {
+            // 显示所有版本（优先中文）
+            console.log('🔍 检测到中文，先搜索 lang:cs 版本...');
+            response = await fetch(
+              `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}+lang:cs&unique=prints&order=set`
+            );
+            data = await response.json();
+            console.log('🔍 lang:cs 搜索结果:', data.total_cards, '张');
+            
+            // 补充搜索所有版本
+            if (data.total_cards < 5) {
+              console.log('🔍 结果较少，补充搜索所有版本...');
+              const allResponse = await fetch(
+                `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=set`
+              );
+              const allData = await allResponse.json();
+              console.log('🔍 所有版本搜索结果:', allData.total_cards, '张');
+              
+              // 合并结果（去重）
+              if (allData.total_cards > 0) {
+                const existingIds = new Set(data.data.map(c => c.id));
+                const newCards = allData.data.filter(c => !existingIds.has(c.id));
+                data.data = [...data.data, ...newCards];
+                data.total_cards = data.data.length;
+                console.log('🔍 合并后结果:', data.total_cards, '张');
+              }
+            }
+          }
+          
+          // 策略 2: 如果没结果，尝试 fuzzy 精确匹配
+          if (data.total_cards === 0) {
+            console.log('🔍 无结果，尝试 fuzzy 匹配...');
+            response = await fetch(
+              `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`
+            );
+            if (response.ok) {
+              const card = await response.json();
+              data = { total_cards: 1, data: [card] };
+              console.log('🔍 Fuzzy 匹配成功:', card.name);
+            }
+          }
+          
+          // 策略 3: 还是没结果，尝试不带语言限定
+          if (data.total_cards === 0) {
+            console.log('🔍 尝试不带语言限定...');
+            response = await fetch(
+              `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=set`
+            );
+            data = await response.json();
+            console.log('🔍 通用搜索结果:', data.total_cards, '张');
+          }
+        } else {
+          // 英文搜索：使用普通搜索
+          console.log('🔍 英文搜索...');
           response = await fetch(
-            `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`
+            `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=set`
           );
-          if (response.ok) {
-            const card = await response.json();
-            data = { total_cards: 1, data: [card] };
+          data = await response.json();
+          console.log('🔍 英文搜索结果:', data.total_cards, '张');
+          
+          // 如果没结果，尝试 fuzzy
+          if (data.total_cards === 0) {
+            console.log('🔍 无结果，尝试 fuzzy...');
+            response = await fetch(
+              `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`
+            );
+            if (response.ok) {
+              const card = await response.json();
+              data = { total_cards: 1, data: [card] };
+            }
           }
         }
+        
+        console.log('🔍 最终搜索结果:', data.total_cards, '张');
 
-        // 策略 3: 显示错误
+        // 显示错误
         if (data.total_cards === 0 || (data.data && data.data.length === 0)) {
           resultsDiv.innerHTML = `
             <div class="empty-state">
               <div class="empty-state-icon">🔍</div>
               <div class="empty-state-text">未找到卡牌</div>
-              <div class="empty-state-sub">试试英文名或卡牌编号</div>
+              <div class="empty-state-sub">试试其他关键词或卡牌编号</div>
             </div>
           `;
           return;
@@ -2272,13 +2381,20 @@ Sideboard
 
       resultsDiv.innerHTML = cards.map(card => {
         // 优先使用中文名称（如果有）
+        // Scryfall API 返回的中文卡名在 printed_name 字段
         const displayName = card.printed_name || card.name;
         const displayType = card.printed_type_line || card.type_line;
+        
+        // 获取卡牌图片（优先正常版本）
+        const imageUrl = card.image_uris?.normal || 
+                        card.card_faces?.[0]?.image_uris?.normal || 
+                        card.image_uris?.small ||
+                        'https://cards.scryfall.io/back.jpg';
         
         const manaCost = parseManaCost(card.mana_cost);
         return `
           <div class="card-item" onclick="addToDeck('${card.id}', '${displayName.replace(/'/g, "\\'")}')">
-            <img class="card-image" src="${card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal || 'https://cards.scryfall.io/back.jpg'}" alt="${displayName}">
+            <img class="card-image" src="${imageUrl}" alt="${displayName}">
             <div class="card-details">
               <div class="card-name">${displayName}</div>
               <div class="card-type">${displayType}</div>
