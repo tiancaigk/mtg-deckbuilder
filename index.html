@@ -1995,17 +1995,25 @@ Sideboard
           isPublic: false
         };
 
+        console.log('🔵 正在保存卡组到云端:', name);
         const result = await mtgAuth.saveDeck(deckData);
+        console.log('🔵 云端保存结果:', result);
 
         if (syncStatusEl) {
           if (result.success) {
             syncStatusEl.className = 'sync-status synced';
             syncStatusEl.textContent = '已同步到云端';
             showToast('卡组已保存到云端！', 'success');
+            
+            // 更新本地存储的 cloudId
+            savedDecks[name].cloudId = result.deck.id;
+            savedDecks[name].fromCloud = true;
+            localStorage.setItem('mtg-saved-decks', JSON.stringify(savedDecks));
           } else {
             syncStatusEl.className = 'sync-status';
             syncStatusEl.textContent = '同步失败';
             showToast('云端保存失败：' + result.error, 'error');
+            console.error('❌ 云端保存失败:', result.error);
           }
         }
       }
@@ -3347,11 +3355,39 @@ Sideboard
     window.loadCloudDecks = async function() {
       if (!currentUser || !window.mtgAuth) return;
       
+      console.log('🔍 正在加载云端卡组...');
+      
       const result = await mtgAuth.loadDecks();
       
       if (result.success && result.decks.length > 0) {
-        console.log('云端卡组:', result.decks);
-        // TODO: 显示云端卡组列表
+        console.log('✅ 云端卡组:', result.decks);
+        
+        // 合并云端和本地卡组
+        const savedDecks = getSavedDecks();
+        
+        result.decks.forEach(cloudDeck => {
+          const name = cloudDeck.name;
+          if (!savedDecks[name]) {
+            // 云端卡组不在本地，添加到本地
+            savedDecks[name] = {
+              name: cloudDeck.name,
+              main: cloudDeck.main_deck || [],
+              side: cloudDeck.sideboard || [],
+              updatedAt: cloudDeck.updated_at,
+              fromCloud: true,
+              cloudId: cloudDeck.id
+            };
+          }
+        });
+        
+        localStorage.setItem('mtg-saved-decks', JSON.stringify(savedDecks));
+        renderSavedDecks();
+        
+        showToast(`已同步 ${result.decks.length} 副云端卡组`, 'success');
+      } else if (result.success) {
+        console.log('ℹ️ 云端没有卡组');
+      } else {
+        console.error('❌ 加载云端卡组失败:', result.error);
       }
     };
     
