@@ -1,0 +1,2959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>万智牌卡组构建器 | MTG Deck Builder</title>
+  <style>
+    :root {
+      --primary: #8B5CF6;
+      --primary-dark: #7C3AED;
+      --secondary: #10B981;
+      --danger: #EF4444;
+      --warning: #F59E0B;
+      --bg: #0F172A;
+      --bg-card: #1E293B;
+      --bg-hover: #334155;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --border: #334155;
+      --white: #FFFFFF;
+      
+      /* 法力颜色 */
+      --white-mana: #F8F8F8;
+      --blue-mana: #0070DD;
+      --black-mana: #151515;
+      --red-mana: #DC2815;
+      --green-mana: #00733E;
+      --colorless: #9CA3AF;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* 头部 */
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      padding: 1rem 2rem;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      max-width: 1600px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--white);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .deck-info {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .deck-stat {
+      text-align: center;
+    }
+
+    .deck-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .deck-stat-label {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.8);
+      text-transform: uppercase;
+    }
+
+    .deck-stat-value.price {
+      color: var(--secondary);
+      font-size: 1.25rem;
+    }
+
+    .deck-stat-value.success { color: var(--secondary); }
+    .deck-stat-value.warning { color: var(--warning); }
+    .deck-stat-value.error { color: var(--danger); }
+    .deck-stat-value.success { color: var(--secondary); }
+
+    .deck-name-input {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      color: var(--white);
+      font-size: 1rem;
+      width: 250px;
+      transition: all 0.3s;
+    }
+
+    .deck-name-input::placeholder {
+      color: rgba(255,255,255,0.6);
+    }
+
+    .deck-name-input:focus {
+      outline: none;
+      background: rgba(255,255,255,0.3);
+      border-color: var(--white);
+    }
+
+    .deck-manage-btn {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      width: 44px;
+      height: 44px;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .deck-manage-btn:hover {
+      background: rgba(255,255,255,0.3);
+      border-color: var(--white);
+      transform: scale(1.05);
+    }
+
+    /* 主容器 */
+    .main-container {
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 550px;
+      gap: 1.5rem;
+    }
+
+    /* 手机端适配 */
+    @media (max-width: 768px) {
+      .header {
+        padding: 0.75rem 1rem;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .logo {
+        font-size: 1.25rem;
+      }
+
+      .logo-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 1.25rem;
+      }
+
+      .deck-info {
+        width: 100%;
+        justify-content: space-around;
+        gap: 0.5rem;
+      }
+
+      .deck-name-input {
+        width: 100%;
+        max-width: 200px;
+      }
+
+      .deck-stat-value {
+        font-size: 1.25rem;
+      }
+
+      .deck-stat-label {
+        font-size: 0.625rem;
+      }
+
+      .main-container {
+        grid-template-columns: 1fr;
+        padding: 0.75rem;
+        gap: 1rem;
+      }
+
+      .deck-panel {
+        position: static;
+        max-height: none;
+        min-width: auto;
+        padding: 1rem;
+      }
+
+      .search-section {
+        padding: 1rem;
+      }
+
+      .search-box {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .search-btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .search-filters {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 0.5rem;
+      }
+
+      .filter-chip {
+        flex-shrink: 0;
+      }
+
+      .search-results {
+        grid-template-columns: 1fr;
+      }
+
+      .card-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .card-image {
+        width: 100%;
+        max-width: 200px;
+        height: auto;
+        aspect-ratio: 2.5/3.5;
+        margin: 0 auto;
+      }
+
+      .card-details {
+        width: 100%;
+        text-align: center;
+        margin-top: 0.75rem;
+      }
+
+      .add-btn {
+        width: 100%;
+        margin-top: 0.75rem;
+      }
+
+      /* 卡组卡片手机适配 */
+      .deck-card {
+        padding: 0.75rem;
+      }
+
+      .deck-card-info {
+        gap: 0.5rem;
+      }
+
+      .deck-card-quantity-row {
+        padding: 0.25rem;
+      }
+
+      .deck-card-quantity {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+      }
+
+      .deck-card-qty-btn {
+        width: 18px;
+        height: 18px;
+        font-size: 0.625rem;
+      }
+
+      .deck-card-thumbnail {
+        width: 40px;
+        height: 56px;
+      }
+
+      .deck-card-name {
+        font-size: 0.875rem;
+      }
+
+      .deck-card-price {
+        font-size: 0.625rem;
+      }
+
+      .deck-card-actions-wrapper {
+        min-width: 60px;
+        gap: 0.25rem;
+      }
+
+      .deck-card-foil-label {
+        font-size: 0.5rem;
+        padding: 0.125rem 0.375rem;
+        min-width: 50px;
+      }
+
+      .qty-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 0.875rem;
+      }
+
+      /* 面板区域 */
+      .deck-area-header {
+        padding: 0.75rem;
+      }
+
+      .deck-area-title {
+        font-size: 0.875rem;
+      }
+
+      .deck-area-limit {
+        font-size: 0.625rem;
+      }
+
+      .deck-area-content {
+        padding: 0.75rem;
+      }
+
+      .section-header {
+        padding: 0.5rem;
+      }
+
+      .section-title {
+        font-size: 0.8125rem;
+      }
+
+      .deck-card-name-wrapper {
+        gap: 0.125rem;
+      }
+
+      /* 法力曲线 */
+      .mana-curve {
+        padding: 0.75rem;
+      }
+
+      .mana-curve-title {
+        font-size: 0.75rem;
+      }
+
+      .curve-chart {
+        height: 80px;
+      }
+
+      /* 导入弹窗 */
+      .modal-content {
+        padding: 1.25rem;
+        max-width: 95%;
+      }
+
+      .modal-title {
+        font-size: 1.125rem;
+      }
+
+      .import-textarea {
+        height: 200px;
+        font-size: 0.75rem;
+      }
+
+      .btn {
+        padding: 0.625rem 1.25rem;
+        font-size: 0.875rem;
+      }
+
+      /* 版本选择器 */
+      .versions-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+      }
+
+      .version-image {
+        aspect-ratio: 2.5/3.5;
+      }
+
+      .version-set {
+        font-size: 0.625rem;
+      }
+
+      .version-price {
+        font-size: 0.875rem;
+      }
+
+      .foil-toggle {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .deck-stat-value {
+        font-size: 1rem;
+      }
+
+      .deck-stat-label {
+        font-size: 0.5rem;
+      }
+
+      .deck-card-quantity {
+        width: 24px;
+        height: 24px;
+        font-size: 0.625rem;
+      }
+
+      .deck-card-qty-btn {
+        width: 16px;
+        height: 16px;
+        font-size: 0.5rem;
+      }
+
+      .deck-card-thumbnail {
+        width: 32px;
+        height: 45px;
+      }
+
+      .versions-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    }
+
+    /* 搜索区域 */
+    .search-section {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .search-box {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .search-input {
+      flex: 1;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 0.875rem 1.25rem;
+      color: var(--text);
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+    }
+
+    .search-btn {
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+      border-radius: 12px;
+      padding: 0.875rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .search-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .search-filters {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .filter-chip:hover, .filter-chip.active {
+      border-color: var(--primary);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .filter-chip.active {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .mana-filter {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+      color: var(--white);
+    }
+
+    /* 卡牌搜索结果 */
+    .search-results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .card-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .card-item:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2);
+    }
+
+    .card-image {
+      width: 80px;
+      height: 112px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--bg-hover);
+      flex-shrink: 0;
+    }
+
+    .card-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-name {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-type {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .card-mana {
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .mana-symbol {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--white);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .mana-w { background: var(--white-mana); color: #333; }
+    .mana-u { background: var(--blue-mana); }
+    .mana-b { background: var(--black-mana); }
+    .mana-r { background: var(--red-mana); }
+    .mana-g { background: var(--green-mana); }
+    .mana-c { background: var(--colorless); }
+
+    .add-btn {
+      background: var(--secondary);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .add-btn:hover {
+      background: #059669;
+      transform: scale(1.05);
+    }
+
+    /* 卡组面板 */
+    .deck-panel {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      position: sticky;
+      top: 100px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      min-width: 550px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .panel-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .action-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .action-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .action-btn.export {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--white);
+    }
+
+    .action-btn.export:hover {
+      background: var(--primary-dark);
+    }
+
+    /* 卡组区域 */
+    .deck-area {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .deck-area-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: var(--bg);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .deck-area-header:hover {
+      background: var(--bg-hover);
+    }
+
+    .deck-area-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .deck-area-count {
+      background: var(--primary);
+      color: var(--white);
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+
+    .deck-area-count.warning { background: var(--warning); }
+    .deck-area-count.error { background: var(--danger); }
+    .deck-area-count.success { background: var(--secondary); }
+
+    .deck-area-limit {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: 0.5rem;
+    }
+
+    .deck-area-content {
+      padding: 1rem;
+      background: var(--bg-card);
+    }
+
+    /* 卡组分类 */
+    .deck-section {
+      margin-bottom: 1rem;
+    }
+
+    .deck-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      background: var(--bg);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .section-header:hover {
+      background: var(--bg-hover);
+    }
+
+    .section-title {
+      font-weight: 600;
+      font-size: 0.9375rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-muted);
+    }
+
+    .section-count {
+      background: var(--bg-hover);
+      color: var(--text-muted);
+      padding: 0.125rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .deck-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: var(--bg);
+      border-radius: 12px;
+      margin-bottom: 0.5rem;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .deck-card:hover {
+      background: var(--bg-hover);
+    }
+
+    .deck-card-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .deck-card-name-wrapper {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .deck-card-quantity-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-hover);
+      border-radius: 8px;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .deck-card-quantity {
+      background: var(--primary);
+      color: var(--white);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .deck-card-qty-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .deck-card-qty-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .deck-card-qty-btn:hover {
+      background: var(--primary);
+      color: var(--white);
+      border-color: var(--primary);
+    }
+
+    .deck-card-thumbnail {
+      width: 50px;
+      height: 70px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: var(--bg-hover);
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+      transition: all 0.3s;
+    }
+
+    .deck-card-thumbnail:hover {
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+
+    .deck-card-name-wrapper {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .deck-card-name {
+      font-size: 0.9375rem;
+      color: var(--text);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .deck-card-name span {
+      cursor: pointer;
+      color: var(--primary);
+    }
+
+    .deck-card-price {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .deck-card-set-info {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .deck-card-actions-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+      min-width: 70px;
+    }
+
+    .deck-card-foil-label {
+      font-size: 0.625rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      font-weight: 700;
+      text-align: center;
+      min-width: 60px;
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .deck-card-foil-label.foil {
+      background: linear-gradient(135deg, #F59E0B, #EF4444);
+      color: #fff;
+    }
+
+    .deck-card-foil-label.nonfoil {
+      background: var(--bg-hover);
+      color: var(--text-muted);
+    }
+
+    .deck-card-actions {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .qty-btn {
+      background: var(--bg-hover);
+      border: none;
+      color: var(--text);
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      transition: all 0.3s;
+    }
+
+    .qty-btn:hover {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .qty-btn.remove:hover {
+      background: var(--danger);
+    }
+
+    /* 法力曲线 */
+    .mana-curve {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .mana-curve-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+
+    .curve-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.5rem;
+      height: 100px;
+    }
+
+    .curve-bar {
+      flex: 1;
+      background: linear-gradient(to top, var(--primary), var(--primary-dark));
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.3s;
+      position: relative;
+    }
+
+    .curve-bar:hover {
+      opacity: 0.8;
+    }
+
+    .curve-label {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* 颜色分布 */
+    .color-distribution {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .color-pip {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+      color: var(--white);
+      position: relative;
+    }
+
+    .color-pip.w { background: var(--white-mana); color: #333; }
+    .color-pip.u { background: var(--blue-mana); }
+    .color-pip.b { background: var(--black-mana); }
+    .color-pip.r { background: var(--red-mana); }
+    .color-pip.g { background: var(--green-mana); }
+
+    .color-count {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--bg-card);
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 0.625rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state-text {
+      font-size: 0.875rem;
+    }
+
+    /* 加载状态 */
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 通知 */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .toast.success {
+      border-color: var(--secondary);
+    }
+
+    .toast.error {
+      border-color: var(--danger);
+    }
+
+    .toast.warning {
+      border-color: var(--warning);
+    }
+
+    /* 版本选择弹窗 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 800px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+    }
+
+    .versions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .version-card {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+    }
+
+    .version-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .version-card.selected {
+      border-color: var(--secondary);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .version-image {
+      width: 100%;
+      aspect-ratio: 2.5/3.5;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      background: var(--bg-hover);
+    }
+
+    .version-set {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .version-price {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--secondary);
+      margin-top: 0.5rem;
+    }
+
+    .version-rarity {
+      font-size: 0.625rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 0.25rem;
+    }
+
+    .rarity-common { background: #9CA3AF; color: #000; }
+    .rarity-uncommon { background: #10B981; color: #fff; }
+    .rarity-rare { background: #F59E0B; color: #000; }
+    .rarity-mythic { background: #EF4444; color: #fff; }
+
+    /* Foil 切换按钮 */
+    .foil-toggle {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--bg);
+      border-radius: 8px;
+    }
+
+    .foil-option {
+      flex: 1;
+      padding: 0.75rem;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+    }
+
+    .foil-option:hover {
+      border-color: var(--primary);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .foil-option.active {
+      border-color: var(--secondary);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .foil-option.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .foil-option-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .foil-option-price {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .foil-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.625rem;
+      font-weight: 700;
+      margin-left: 0.5rem;
+    }
+
+    .foil-badge-foil {
+      background: linear-gradient(135deg, #F59E0B, #EF4444);
+      color: #fff;
+    }
+
+    .foil-badge-nonfoil {
+      background: var(--bg-hover);
+      color: var(--text-muted);
+    }
+
+    /* 卡组管理 */
+    .saved-deck-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .saved-deck-item:hover {
+      border-color: var(--primary);
+      background: var(--bg-hover);
+    }
+
+    .saved-deck-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .saved-deck-name {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .saved-deck-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .saved-deck-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+      margin-left: 1rem;
+    }
+
+    .saved-deck-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.875rem;
+    }
+
+    .saved-deck-btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--white);
+    }
+
+    .saved-deck-btn.delete:hover {
+      background: var(--danger);
+      border-color: var(--danger);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* 导入弹窗 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+    }
+
+    .import-textarea {
+      width: 100%;
+      height: 300px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      color: var(--text);
+      font-family: monospace;
+      font-size: 0.875rem;
+      resize: vertical;
+      margin-bottom: 1rem;
+    }
+
+    .import-status {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--bg);
+      border-radius: 8px;
+      display: none;
+    }
+
+    .import-progress {
+      font-size: 0.875rem;
+      color: var(--text);
+      margin-top: 0.5rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.9375rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .deck-info {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .deck-name-input {
+        width: 100%;
+      }
+
+      .search-box {
+        flex-direction: column;
+      }
+
+      .search-btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .deck-panel {
+        position: static;
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 头部 -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">🎴</div>
+        <span>MTG Deck Builder</span>
+      </div>
+      <div class="deck-info">
+        <button class="deck-manage-btn" onclick="showDeckManager()" title="卡组管理">📁</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主容器 -->
+  <main class="main-container">
+    <!-- 左侧：搜索和结果 -->
+    <div class="search-section">
+      <div class="search-box">
+        <input type="text" class="search-input" placeholder="搜索卡牌（英文或中文）..." id="searchInput">
+        <button class="search-btn" onclick="searchCards()">
+          🔍 搜索
+        </button>
+      </div>
+      <div class="search-filters" id="colorFilters">
+        <div class="filter-chip active" data-color="">
+          <span>全部</span>
+        </div>
+        <div class="filter-chip" data-color="W">
+          <div class="mana-filter mana-w">W</div>
+        </div>
+        <div class="filter-chip" data-color="U">
+          <div class="mana-filter mana-u">U</div>
+        </div>
+        <div class="filter-chip" data-color="B">
+          <div class="mana-filter mana-b">B</div>
+        </div>
+        <div class="filter-chip" data-color="R">
+          <div class="mana-filter mana-r">R</div>
+        </div>
+        <div class="filter-chip" data-color="G">
+          <div class="mana-filter mana-g">G</div>
+        </div>
+      </div>
+      <div class="search-results" id="searchResults">
+        <div class="empty-state">
+          <div class="empty-state-icon">🔍</div>
+          <div class="empty-state-text">搜索卡牌开始构建你的卡组</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧：卡组面板 -->
+    <aside class="deck-panel">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0;">
+          <h2 class="panel-title" style="margin: 0;">我的卡组</h2>
+          <span id="deckNameDisplay" style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
+        </div>
+        <div class="panel-actions">
+          <button class="action-btn" onclick="clearDeck()" title="清空卡组">🗑️</button>
+          <button class="action-btn" onclick="showImportModal()" title="导入卡组">📥</button>
+          <button class="action-btn export" onclick="exportDeck()" title="导出卡组">📤</button>
+        </div>
+      </div>
+
+      <!-- 卡组统计 -->
+      <div style="display: flex; gap: 1.5rem; padding: 1rem; background: var(--bg); border-radius: 8px; margin-bottom: 1.5rem;">
+        <div class="deck-stat" style="text-align: center; flex: 1;">
+          <div class="deck-stat-value" id="mainCount" style="font-size: 1.5rem;">0</div>
+          <div class="deck-stat-label" style="font-size: 0.75rem;">主牌</div>
+        </div>
+        <div class="deck-stat" style="text-align: center; flex: 1;">
+          <div class="deck-stat-value" id="sideCount" style="font-size: 1.5rem;">0</div>
+          <div class="deck-stat-label" style="font-size: 0.75rem;">备牌</div>
+        </div>
+        <div class="deck-stat" style="text-align: center; flex: 1;">
+          <div class="deck-stat-value price" id="totalPrice" style="font-size: 1.5rem;">$0.00</div>
+          <div class="deck-stat-label" style="font-size: 0.75rem;">总价</div>
+        </div>
+      </div>
+
+      <!-- 主牌区 -->
+      <div class="deck-area">
+        <div class="deck-area-header" onclick="toggleSection('mainDeckContent')">
+          <div class="deck-area-title">
+            ⚔️ 主牌 (Main Deck)
+            <span class="deck-area-count" id="mainTotalCount">0</span>
+          </div>
+          <span class="deck-area-limit">最少 60 张</span>
+        </div>
+        <div class="deck-area-content" id="mainDeckContent">
+          <!-- 生物 -->
+          <div class="deck-section" id="mainCreaturesSection">
+            <div class="section-header">
+              <div class="section-title">⚔️ 生物</div>
+              <div class="section-count" id="mainCreatureCount">0</div>
+            </div>
+            <div id="mainCreaturesList"></div>
+          </div>
+
+          <!-- 咒语 -->
+          <div class="deck-section" id="mainSpellsSection">
+            <div class="section-header">
+              <div class="section-title">✨ 咒语</div>
+              <div class="section-count" id="mainSpellCount">0</div>
+            </div>
+            <div id="mainSpellsList"></div>
+          </div>
+
+          <!-- 地牌 -->
+          <div class="deck-section" id="mainLandsSection">
+            <div class="section-header">
+              <div class="section-title">🏔️ 地牌</div>
+              <div class="section-count" id="mainLandCount">0</div>
+            </div>
+            <div id="mainLandsList"></div>
+          </div>
+
+          <!-- 法力曲线 -->
+          <div class="mana-curve">
+            <div class="mana-curve-title">主牌法力曲线</div>
+            <div class="curve-chart" id="mainManaCurve"></div>
+          </div>
+
+          <!-- 颜色分布 -->
+          <div class="mana-curve">
+            <div class="mana-curve-title">主牌颜色分布</div>
+            <div class="color-distribution" id="mainColorDistribution"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 备牌区 -->
+      <div class="deck-area">
+        <div class="deck-area-header" onclick="toggleSection('sideDeckContent')">
+          <div class="deck-area-title">
+            🔄 备牌 (Sideboard)
+            <span class="deck-area-count" id="sideTotalCount">0</span>
+          </div>
+          <span class="deck-area-limit">最多 15 张</span>
+        </div>
+        <div class="deck-area-content" id="sideDeckContent">
+          <!-- 生物 -->
+          <div class="deck-section" id="sideCreaturesSection">
+            <div class="section-header">
+              <div class="section-title">⚔️ 生物</div>
+              <div class="section-count" id="sideCreatureCount">0</div>
+            </div>
+            <div id="sideCreaturesList"></div>
+          </div>
+
+          <!-- 咒语 -->
+          <div class="deck-section" id="sideSpellsSection">
+            <div class="section-header">
+              <div class="section-title">✨ 咒语</div>
+              <div class="section-count" id="sideSpellCount">0</div>
+            </div>
+            <div id="sideSpellsList"></div>
+          </div>
+
+          <!-- 地牌 -->
+          <div class="deck-section" id="sideLandsSection">
+            <div class="section-header">
+              <div class="section-title">🏔️ 地牌</div>
+              <div class="section-count" id="sideLandCount">0</div>
+            </div>
+            <div id="sideLandsList"></div>
+          </div>
+
+          <!-- 颜色分布 -->
+          <div class="mana-curve">
+            <div class="mana-curve-title">备牌颜色分布</div>
+            <div class="color-distribution" id="sideColorDistribution"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 导入弹窗 -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">📥 导入卡组</h3>
+        <button class="modal-close" onclick="closeImportModal()">×</button>
+      </div>
+      
+      <div style="margin-bottom: 0.5rem;">
+        <label style="display: block; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          粘贴卡组列表（用 "Sideboard" 分隔主牌和备牌）
+        </label>
+      </div>
+
+      <textarea class="import-textarea" id="importText" placeholder="4 Island
+4 Steam Vents
+3 Stormchaser's Talent
+...
+
+Sideboard
+2 Disdainful Stroke
+1 Flashfreeze
+..."></textarea>
+
+      <div class="import-status" id="importStatus">
+        <div style="font-size: 0.875rem; color: var(--text-muted);">导入进度：</div>
+        <div class="import-progress" id="importProgress"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+        <button class="btn btn-primary" onclick="importDeck()">导入卡组</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 版本选择弹窗 -->
+  <div class="modal-overlay" id="versionModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="versionModalTitle">选择卡牌版本</h3>
+        <button class="modal-close" onclick="closeVersionModal()">×</button>
+      </div>
+      <div id="versionModalLoading" style="text-align: center; padding: 2rem;">
+        <div class="spinner"></div>
+        <div>加载中...</div>
+      </div>
+      <div class="versions-grid" id="versionsGrid"></div>
+    </div>
+  </div>
+
+  <!-- 卡组管理弹窗 -->
+  <div class="modal-overlay" id="deckManagerModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">📁 卡组管理</h3>
+        <button class="modal-close" onclick="closeDeckManager()">×</button>
+      </div>
+      
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          当前卡组名称
+        </label>
+        <input type="text" class="deck-name-input" id="deckNameInput" placeholder="输入卡组名称..." style="width: 100%; margin-bottom: 1rem;">
+        <button class="btn btn-primary" onclick="saveCurrentDeck()" style="width: 100%;">💾 保存当前卡组</button>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          已保存的卡组（点击加载）
+        </label>
+        <div id="savedDecksList" style="max-height: 400px; overflow-y: auto;">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 卡组数据
+    let deck = {
+      name: '',
+      main: [],
+      side: []
+    };
+
+    // 当前添加区域
+    let currentArea = 'main';
+
+    // 卡组管理
+    function showDeckManager() {
+      document.getElementById('deckManagerModal').style.display = 'flex';
+      document.getElementById('deckNameInput').value = deck.name || '';
+      renderSavedDecks();
+    }
+
+    function closeDeckManager() {
+      document.getElementById('deckManagerModal').style.display = 'none';
+    }
+
+    // 更新卡组名称显示
+    function updateDeckNameDisplay() {
+      const display = document.getElementById('deckNameDisplay');
+      if (display) {
+        display.textContent = deck.name || '';
+      }
+    }
+
+    // 保存当前卡组
+    function saveCurrentDeck() {
+      const name = document.getElementById('deckNameInput').value.trim();
+      if (!name) {
+        showToast('请输入卡组名称', 'error');
+        return;
+      }
+
+      if (deck.main.length === 0 && deck.side.length === 0) {
+        showToast('卡组是空的', 'error');
+        return;
+      }
+
+      const savedDecks = getSavedDecks();
+      const timestamp = new Date().toISOString();
+      
+      // 更新当前卡组名称
+      deck.name = name;
+      updateDeckNameDisplay();
+      
+      savedDecks[name] = {
+        ...deck,
+        updatedAt: timestamp
+      };
+
+      localStorage.setItem('mtg-saved-decks', JSON.stringify(savedDecks));
+      showToast(`卡组 "${name}" 已保存！`, 'success');
+      renderSavedDecks();
+    }
+
+    // 获取已保存的卡组
+    function getSavedDecks() {
+      const saved = localStorage.getItem('mtg-saved-decks');
+      return saved ? JSON.parse(saved) : {};
+    }
+
+    // 渲染已保存的卡组列表
+    function renderSavedDecks() {
+      const list = document.getElementById('savedDecksList');
+      const savedDecks = getSavedDecks();
+      const deckNames = Object.keys(savedDecks);
+
+      if (deckNames.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📁</div>
+            <div class="empty-state-text">暂无保存的卡组</div>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = deckNames.map(name => {
+        const d = savedDecks[name];
+        const mainCount = d.main.reduce((sum, c) => sum + c.quantity, 0);
+        const sideCount = d.side.reduce((sum, c) => sum + c.quantity, 0);
+        const date = new Date(d.updatedAt).toLocaleString('zh-CN', { 
+          month: 'numeric', 
+          day: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+
+        return `
+          <div class="saved-deck-item" onclick="loadSavedDeck('${name}')">
+            <div class="saved-deck-info">
+              <div class="saved-deck-name">${name}</div>
+              <div class="saved-deck-meta">主牌 ${mainCount} 张 · 备牌 ${sideCount} 张 · ${date}</div>
+            </div>
+            <div class="saved-deck-actions">
+              <button class="saved-deck-btn" onclick="event.stopPropagation(); renameDeck('${name}')" title="重命名">✏️</button>
+              <button class="saved-deck-btn delete" onclick="event.stopPropagation(); deleteDeck('${name}')" title="删除">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 加载已保存的卡组
+    function loadSavedDeck(name) {
+      const savedDecks = getSavedDecks();
+      if (!savedDecks[name]) {
+        showToast('卡组不存在', 'error');
+        return;
+      }
+
+      const d = savedDecks[name];
+      deck = {
+        name: name,
+        main: d.main || [],
+        side: d.side || []
+      };
+
+      updateDeckNameDisplay();
+      updateDeckUI();
+      saveDeck();
+      closeDeckManager();
+      showToast(`已加载卡组 "${name}"`, 'success');
+    }
+
+    // 重命名卡组
+    function renameDeck(oldName) {
+      const newName = prompt('输入新名称:', oldName);
+      if (!newName || newName === oldName) return;
+
+      const savedDecks = getSavedDecks();
+      if (savedDecks[oldName]) {
+        savedDecks[newName] = savedDecks[oldName];
+        savedDecks[newName].updatedAt = new Date().toISOString();
+        delete savedDecks[oldName];
+        localStorage.setItem('mtg-saved-decks', JSON.stringify(savedDecks));
+        
+        // 如果当前卡组是这个，也更新名称
+        if (deck.name === oldName) {
+          deck.name = newName;
+          updateDeckNameDisplay();
+          saveDeck();
+        }
+        
+        showToast(`已重命名为 "${newName}"`, 'success');
+        renderSavedDecks();
+      }
+    }
+
+    // 删除卡组
+    function deleteDeck(name) {
+      if (!confirm(`确定要删除卡组 "${name}" 吗？`)) return;
+
+      const savedDecks = getSavedDecks();
+      delete savedDecks[name];
+      localStorage.setItem('mtg-saved-decks', JSON.stringify(savedDecks));
+      
+      showToast(`已删除卡组 "${name}"`, 'success');
+      renderSavedDecks();
+    }
+
+    // 点击弹窗外部关闭
+    document.getElementById('deckManagerModal').addEventListener('click', (e) => {
+      if (e.target.id === 'deckManagerModal') {
+        closeDeckManager();
+      }
+    });
+
+    // 安全获取卡组数组
+    function getDeckArray(area) {
+      return area === 'main' ? (deck.main || []) : (deck.side || []);
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDeck();
+      setupColorFilters();
+      updateDeckNameDisplay();
+    });
+
+    // 设置颜色筛选
+    function setupColorFilters() {
+      document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+        });
+      });
+    }
+
+    // 切换区域显示
+    function toggleSection(id) {
+      const section = document.getElementById(id);
+      if (section.style.display === 'none') {
+        section.style.display = 'block';
+      } else {
+        section.style.display = 'none';
+      }
+    }
+
+    // 搜索卡牌
+    async function searchCards() {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+
+      const resultsDiv = document.getElementById('searchResults');
+      resultsDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <div>搜索中...</div>
+        </div>
+      `;
+
+      try {
+        let response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&lang=zh-Hans`);
+        let data = await response.json();
+
+        if (data.total_cards === 0) {
+          response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`);
+          data = await response.json();
+        }
+
+        if (data.has_more) {
+          const nextResponse = await fetch(data.next_page);
+          const nextData = await nextResponse.json();
+          data.data = [...data.data, ...nextData.data];
+        }
+
+        displaySearchResults(data.data || []);
+      } catch (error) {
+        console.error('搜索失败:', error);
+        resultsDiv.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">❌</div>
+            <div class="empty-state-text">搜索失败，请重试</div>
+          </div>
+        `;
+      }
+    }
+
+    // 显示搜索结果
+    function displaySearchResults(cards) {
+      const resultsDiv = document.getElementById('searchResults');
+      
+      if (cards.length === 0) {
+        resultsDiv.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-text">未找到卡牌</div>
+          </div>
+        `;
+        return;
+      }
+
+      resultsDiv.innerHTML = cards.map(card => {
+        const manaCost = parseManaCost(card.mana_cost);
+        return `
+          <div class="card-item" onclick="addToDeck('${card.id}', '${card.name}')">
+            <img class="card-image" src="${card.image_uris?.normal || 'https://cards.scryfall.io/back.jpg'}" alt="${card.name}">
+            <div class="card-details">
+              <div class="card-name">${card.name}</div>
+              <div class="card-type">${card.type_line}</div>
+              <div class="card-mana">
+                ${manaCost.map(m => `<div class="mana-symbol mana-${m.toLowerCase()}">${m}</div>`).join('')}
+              </div>
+            </div>
+            <button class="add-btn">+ ${currentArea === 'main' ? '主牌' : '备牌'}</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 解析法力费用
+    function parseManaCost(manaCost) {
+      if (!manaCost) return ['C'];
+      
+      const symbols = manaCost.match(/{[^}]+}/g) || [];
+      const colors = [];
+      let generic = 0;
+
+      symbols.forEach(symbol => {
+        const color = symbol.replace(/[{}]/g, '');
+        if (['W','U','B','R','G'].includes(color)) {
+          colors.push(color);
+        } else if (!isNaN(parseInt(color))) {
+          generic += parseInt(color);
+        } else if (color === 'C') {
+          colors.push('C');
+        } else if (color.length > 1 && color.includes('/')) {
+          colors.push(color.split('/')[0]);
+        }
+      });
+
+      if (generic > 0) {
+        colors.unshift(generic.toString());
+      }
+
+      return colors.length > 0 ? colors : ['C'];
+    }
+
+    // 添加到卡组
+    function addToDeck(cardId, cardName) {
+      fetch(`https://api.scryfall.com/cards/${cardId}`)
+        .then(res => res.json())
+        .then(card => {
+          const targetDeck = currentArea === 'main' ? deck.main : deck.side;
+          const existing = targetDeck.find(c => c.id === cardId);
+          
+          // 检查是否是基本地
+          const isBasicLand = card.type_line && card.type_line.includes('Basic Land');
+          const maxQuantity = isBasicLand ? 99 : 4;
+          
+          // 获取价格
+          const price = parseFloat(card.prices?.usd || card.prices?.usd_foil || card.prices?.eur || '0') || 0;
+          
+          if (existing) {
+            if (existing.quantity < maxQuantity) {
+              existing.quantity++;
+              showToast(`已添加第 ${existing.quantity} 张 ${card.name} 到${currentArea === 'main' ? '主牌' : '备牌'}`, 'success');
+            } else {
+              showToast(isBasicLand ? '已达到最大数量' : '最多只能放 4 张同名卡', 'error');
+              return;
+            }
+          } else {
+            // 检查备牌是否已满
+            if (currentArea === 'side') {
+              const sideTotal = deck.side.reduce((sum, c) => sum + c.quantity, 0);
+              if (sideTotal >= 15) {
+                showToast('备牌已达 15 张上限', 'error');
+                return;
+              }
+            }
+            
+            targetDeck.push({
+              id: card.id,
+              name: card.name,
+              type_line: card.type_line,
+              mana_cost: card.mana_cost,
+              image_uris: card.image_uris,
+              quantity: 1,
+              price: price,
+              set: card.set,
+              set_name: card.set_name,
+              collector_number: card.collector_number
+            });
+            showToast(`已添加 ${card.name} 到${currentArea === 'main' ? '主牌' : '备牌'}`, 'success');
+          }
+
+          updateDeckUI();
+          saveDeck();
+        })
+        .catch(err => {
+          console.error('添加失败:', err);
+          showToast('添加失败', 'error');
+        });
+    }
+
+    // 更新卡组 UI
+    function updateDeckUI() {
+      // 确保数组存在
+      if (!Array.isArray(deck.main)) deck.main = [];
+      if (!Array.isArray(deck.side)) deck.side = [];
+
+      // 主牌
+      const mainCreatures = deck.main.filter(c => c.type_line && c.type_line.includes('Creature'));
+      const mainSpells = deck.main.filter(c => c.type_line && !c.type_line.includes('Creature') && !c.type_line.includes('Land'));
+      const mainLands = deck.main.filter(c => c.type_line && c.type_line.includes('Land'));
+
+      document.getElementById('mainCreaturesList').innerHTML = renderDeckList(mainCreatures, 'main');
+      document.getElementById('mainSpellsList').innerHTML = renderDeckList(mainSpells, 'main');
+      document.getElementById('mainLandsList').innerHTML = renderDeckList(mainLands, 'main');
+
+      document.getElementById('mainCreatureCount').textContent = mainCreatures.reduce((sum, c) => sum + c.quantity, 0);
+      document.getElementById('mainSpellCount').textContent = mainSpells.reduce((sum, c) => sum + c.quantity, 0);
+      document.getElementById('mainLandCount').textContent = mainLands.reduce((sum, c) => sum + c.quantity, 0);
+
+      const mainTotal = deck.main.reduce((sum, c) => sum + c.quantity, 0);
+      document.getElementById('mainCount').textContent = mainTotal;
+      document.getElementById('mainTotalCount').textContent = mainTotal;
+
+      // 更新主牌计数颜色
+      const mainCountEl = document.getElementById('mainTotalCount');
+      mainCountEl.className = 'deck-area-count';
+      if (mainTotal < 60) {
+        mainCountEl.classList.add('warning');
+      } else {
+        mainCountEl.classList.add('success');
+      }
+
+      const headerCountEl = document.getElementById('mainCount');
+      headerCountEl.className = 'deck-stat-value';
+      if (mainTotal < 60) {
+        headerCountEl.classList.add('warning');
+      } else {
+        headerCountEl.classList.add('success');
+      }
+
+      // 备牌
+      const sideCreatures = deck.side.filter(c => c.type_line && c.type_line.includes('Creature'));
+      const sideSpells = deck.side.filter(c => c.type_line && !c.type_line.includes('Creature') && !c.type_line.includes('Land'));
+      const sideLands = deck.side.filter(c => c.type_line && c.type_line.includes('Land'));
+
+      document.getElementById('sideCreaturesList').innerHTML = renderDeckList(sideCreatures, 'side');
+      document.getElementById('sideSpellsList').innerHTML = renderDeckList(sideSpells, 'side');
+      document.getElementById('sideLandsList').innerHTML = renderDeckList(sideLands, 'side');
+
+      document.getElementById('sideCreatureCount').textContent = sideCreatures.reduce((sum, c) => sum + c.quantity, 0);
+      document.getElementById('sideSpellCount').textContent = sideSpells.reduce((sum, c) => sum + c.quantity, 0);
+      document.getElementById('sideLandCount').textContent = sideLands.reduce((sum, c) => sum + c.quantity, 0);
+
+      const sideTotal = deck.side.reduce((sum, c) => sum + c.quantity, 0);
+      document.getElementById('sideCount').textContent = sideTotal;
+      document.getElementById('sideTotalCount').textContent = sideTotal;
+
+      // 更新备牌计数颜色
+      const sideCountEl = document.getElementById('sideTotalCount');
+      sideCountEl.className = 'deck-area-count';
+      if (sideTotal > 15) {
+        sideCountEl.classList.add('error');
+      } else if (sideTotal === 15) {
+        sideCountEl.classList.add('success');
+      } else {
+        sideCountEl.classList.add('warning');
+      }
+
+      const sideHeaderEl = document.getElementById('sideCount');
+      sideHeaderEl.className = 'deck-stat-value';
+      if (sideTotal > 15) {
+        sideHeaderEl.classList.add('error');
+      } else if (sideTotal === 15) {
+        sideHeaderEl.classList.add('success');
+      } else {
+        sideHeaderEl.classList.add('warning');
+      }
+
+      // 计算总价格
+      const mainPrice = deck.main.reduce((sum, c) => sum + (c.price || 0) * c.quantity, 0);
+      const sidePrice = deck.side.reduce((sum, c) => sum + (c.price || 0) * c.quantity, 0);
+      const totalPrice = mainPrice + sidePrice;
+      document.getElementById('totalPrice').textContent = `$${totalPrice.toFixed(2)}`;
+
+      updateManaCurve('main');
+      updateColorDistribution('main');
+      updateColorDistribution('side');
+    }
+
+    // 渲染卡组列表
+    function renderDeckList(cards, area) {
+      if (cards.length === 0) {
+        return '<div class="empty-state" style="padding: 1rem;"><small>暂无卡牌</small></div>';
+      }
+
+      return cards.map(card => {
+        const cardTotal = (card.price || 0) * card.quantity;
+        const isFoil = card.foil || false;
+        const thumbnailUrl = card.image_uris?.art_crop || card.image_uris?.small || 'https://cards.scryfall.io/back.jpg';
+        // 转义单引号，防止 HTML 属性中的字符串断裂
+        const escapedName = card.name ? card.name.replace(/'/g, "\\'") : '';
+        
+        return `
+        <div class="deck-card">
+          <div class="deck-card-info">
+            <div class="deck-card-quantity-row">
+              <div class="deck-card-quantity">${card.quantity}</div>
+              <div class="deck-card-qty-buttons">
+                <button class="deck-card-qty-btn" onclick="event.stopPropagation(); changeQuantity('${card.id}', -1, '${area}')">−</button>
+                <button class="deck-card-qty-btn" onclick="event.stopPropagation(); changeQuantity('${card.id}', 1, '${area}')">+</button>
+              </div>
+            </div>
+            <img class="deck-card-thumbnail" src="${thumbnailUrl}" alt="${escapedName}" onclick="showVersionSelector('${card.id}', '${escapedName}', '${area}')">
+            <div class="deck-card-name-wrapper">
+              <div class="deck-card-name">
+                <span style="cursor: pointer; color: var(--primary);" onclick="showVersionSelector('${card.id}', '${escapedName}', '${area}')">${card.name}</span>
+              </div>
+              ${card.set || card.collector_number ? `<div class="deck-card-set-info">${card.set ? card.set.toUpperCase() : ''}${card.set && card.collector_number ? ' • ' : ''}${card.collector_number || ''}</div>` : ''}
+              ${card.price > 0 ? `<div class="deck-card-price">$${card.price.toFixed(2)} × ${card.quantity} = $${cardTotal.toFixed(2)}</div>` : ''}
+            </div>
+          </div>
+          <div class="deck-card-actions-wrapper">
+            <span class="deck-card-foil-label ${isFoil ? 'foil' : 'nonfoil'}">${isFoil ? '✨ Foil' : '⚪ Non-foil'}</span>
+            <button class="qty-btn" onclick="event.stopPropagation(); toggleFoil('${card.id}', '${area}')" title="切换 Foil/Non-foil">${isFoil ? '🔄' : '🔄'}</button>
+          </div>
+        </div>
+      `;
+      }).join('');
+    }
+
+    // 改变数量
+    function changeQuantity(cardId, delta, area) {
+      const targetDeck = area === 'main' ? deck.main : deck.side;
+      const card = targetDeck.find(c => c.id === cardId);
+      if (!card) return;
+
+      // 检查是否是基本地
+      const isBasicLand = card.type_line && card.type_line.includes('Basic Land');
+      const maxQuantity = isBasicLand ? 99 : 4;
+
+      card.quantity += delta;
+      if (card.quantity <= 0) {
+        if (area === 'main') {
+          deck.main = deck.main.filter(c => c.id !== cardId);
+        } else {
+          deck.side = deck.side.filter(c => c.id !== cardId);
+        }
+      } else if (card.quantity > maxQuantity) {
+        card.quantity = maxQuantity;
+        showToast(isBasicLand ? '基本地最多 99 张' : '最多只能放 4 张同名卡', 'error');
+      }
+
+      updateDeckUI();
+      saveDeck();
+    }
+
+    // 更新法力曲线
+    function updateManaCurve(area) {
+      const targetDeck = area === 'main' ? (deck.main || []) : (deck.side || []);
+      const curve = [0, 0, 0, 0, 0, 0, 0];
+
+      targetDeck.forEach(card => {
+        const cmc = parseCMC(card.mana_cost);
+        const index = Math.min(cmc, 6);
+        curve[index] += card.quantity;
+      });
+
+      const max = Math.max(...curve);
+      const chart = document.getElementById(`${area}ManaCurve`);
+      
+      if (!chart) return;
+      
+      chart.innerHTML = curve.map((count, i) => {
+        const height = max > 0 ? (count / max) * 80 : 4;
+        return `
+          <div class="curve-bar" style="height: ${height}px;">
+            <div class="curve-label">${i === 6 ? '6+' : i}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 解析法术力值
+    function parseCMC(manaCost) {
+      if (!manaCost) return 0;
+      
+      const symbols = manaCost.match(/{[^}]+}/g) || [];
+      let cmc = 0;
+
+      symbols.forEach(symbol => {
+        const value = symbol.replace(/[{}]/g, '');
+        if (!isNaN(parseInt(value))) {
+          cmc += parseInt(value);
+        } else if (['W','U','B','R','G'].includes(value)) {
+          cmc += 1;
+        } else if (value === 'C') {
+          cmc += 1;
+        } else if (value.includes('/')) {
+          cmc += 1;
+        }
+      });
+
+      return cmc;
+    }
+
+    // 更新颜色分布
+    function updateColorDistribution(area) {
+      const targetDeck = area === 'main' ? (deck.main || []) : (deck.side || []);
+      const colors = { W: 0, U: 0, B: 0, R: 0, G: 0 };
+
+      targetDeck.forEach(card => {
+        if (!card.mana_cost) return;
+        
+        const symbols = card.mana_cost.match(/{[^}]+}/g) || [];
+        symbols.forEach(symbol => {
+          const color = symbol.replace(/[{}]/g, '');
+          if (['W','U','B','R','G'].includes(color)) {
+            colors[color] += card.quantity;
+          }
+        });
+      });
+
+      const distribution = document.getElementById(`${area}ColorDistribution`);
+      if (!distribution) return;
+
+      const colorNames = { W: '白', U: '蓝', B: '黑', R: '红', G: '绿' };
+
+      distribution.innerHTML = Object.entries(colors)
+        .filter(([_, count]) => count > 0)
+        .map(([color, count]) => `
+          <div class="color-pip ${color.toLowerCase()}">
+            ${color}
+            <div class="color-count">${count}</div>
+          </div>
+        `).join('');
+    }
+
+    // 清空卡组
+    function clearDeck() {
+      if (confirm('确定要清空主牌和备牌吗？')) {
+        deck.main = [];
+        deck.side = [];
+        deck.name = '';
+        updateDeckNameDisplay();
+        updateDeckUI();
+        saveDeck();
+        showToast('卡组已清空', 'success');
+      }
+    }
+
+    // 导出卡组
+    function exportDeck() {
+      if (deck.main.length === 0 && deck.side.length === 0) {
+        showToast('卡组是空的', 'error');
+        return;
+      }
+
+      let text = `${deck.name || '未命名卡组'}\n\n`;
+      text += `=== Main Deck ===\n`;
+      text += deck.main.map(c => `${c.quantity} ${c.name}`).join('\n');
+      
+      if (deck.side.length > 0) {
+        text += `\n\n=== Sideboard ===\n`;
+        text += deck.side.map(c => `${c.quantity} ${c.name}`).join('\n');
+      }
+      
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('卡组已复制到剪贴板！', 'success');
+      }).catch(() => {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('卡组已复制到剪贴板！', 'success');
+      });
+    }
+
+    // 保存卡组到本地存储
+    function saveDeck() {
+      localStorage.setItem('mtg-deck', JSON.stringify(deck));
+    }
+
+    // 加载卡组
+    function loadDeck() {
+      const saved = localStorage.getItem('mtg-deck');
+      if (saved) {
+        try {
+          const loaded = JSON.parse(saved);
+          // 确保数据结构完整
+          deck = {
+            name: loaded.name || '',
+            main: Array.isArray(loaded.main) ? loaded.main : [],
+            side: Array.isArray(loaded.side) ? loaded.side : []
+          };
+          updateDeckUI();
+        } catch (e) {
+          console.error('加载存档失败:', e);
+          // 数据损坏，重置
+          deck = { name: '', main: [], side: [] };
+        }
+      }
+    }
+
+    // 显示导入弹窗
+    function showImportModal() {
+      document.getElementById('importModal').style.display = 'flex';
+      document.getElementById('importText').value = '';
+      document.getElementById('importStatus').style.display = 'none';
+    }
+
+    // 关闭导入弹窗
+    function closeImportModal() {
+      document.getElementById('importModal').style.display = 'none';
+    }
+
+    // 导入卡组
+    async function importDeck() {
+      const text = document.getElementById('importText').value.trim();
+      if (!text) {
+        showToast('请输入卡组列表', 'error');
+        return;
+      }
+
+      try {
+        // 分割主牌和备牌
+        let mainText = '';
+        let sideText = '';
+        
+        const sideboardIndex = text.toLowerCase().indexOf('sideboard');
+        if (sideboardIndex >= 0) {
+          mainText = text.substring(0, sideboardIndex).trim();
+          sideText = text.substring(sideboardIndex + 9).trim();
+        } else {
+          // 没有 Sideboard 标记，全部作为主牌
+          mainText = text;
+        }
+
+        console.log('主牌文本:', mainText.substring(0, 100));
+        console.log('备牌文本:', sideText.substring(0, 100));
+
+        // 解析主牌
+        const mainCards = parseDeckList(mainText);
+        // 解析备牌
+        const sideCards = parseDeckList(sideText);
+
+        console.log('解析到的主牌:', mainCards);
+        console.log('解析到的备牌:', sideCards);
+
+        if (mainCards.length === 0 && sideCards.length === 0) {
+          showToast('未找到有效的卡牌格式\n格式示例：4 Island 或 4x Island', 'error');
+          return;
+        }
+
+        // 显示进度
+        const statusDiv = document.getElementById('importStatus');
+        const progressDiv = document.getElementById('importProgress');
+        statusDiv.style.display = 'block';
+        
+        const totalCards = mainCards.length + sideCards.length;
+        progressDiv.textContent = `准备导入 ${totalCards} 张卡牌...`;
+
+        // 逐个搜索并添加
+        let imported = 0;
+        let failed = 0;
+        let failedCards = [];
+
+        // 导入主牌
+        for (const card of mainCards) {
+          progressDiv.textContent = `正在搜索主牌：${card.name} (${imported + 1}/${totalCards})`;
+          
+          const success = await importCard(card, 'main');
+          if (success) imported++;
+          else {
+            failed++;
+            failedCards.push(card.name);
+          }
+
+          // 每 5 张卡延迟一下，避免 API 限流
+          if (imported % 5 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
+
+        // 导入备牌
+        for (const card of sideCards) {
+          progressDiv.textContent = `正在搜索备牌：${card.name} (${imported + 1}/${totalCards})`;
+          
+          const success = await importCard(card, 'side');
+          if (success) imported++;
+          else {
+            failed++;
+            failedCards.push(card.name);
+          }
+
+          if (imported % 5 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
+
+        updateDeckUI();
+        saveDeck();
+
+        let resultMsg = `✅ 完成！导入 ${imported} 张卡牌`;
+        if (failed > 0) {
+          resultMsg += `\n⚠️ 失败 ${failed} 张：${failedCards.join(', ')}`;
+        }
+
+        progressDiv.textContent = resultMsg;
+        
+        setTimeout(() => {
+          closeImportModal();
+          showToast(`成功导入 ${imported} 张卡牌！${failed > 0 ? ` (${failed} 张失败)` : ''}`, failed > 0 ? 'warning' : 'success');
+        }, 1500);
+      } catch (error) {
+        console.error('导入错误:', error);
+        showToast('导入失败：' + error.message, 'error');
+      }
+    }
+
+    // 解析卡组列表
+    function parseDeckList(text) {
+      const lines = text.split('\n').filter(line => line.trim());
+      const cards = [];
+
+      console.log('解析文本:', text.substring(0, 200));
+      console.log('行数:', lines.length);
+
+      lines.forEach((line, index) => {
+        const match = line.match(/^(\d+)\s*[xX×]?\s*(.+)$/);
+        console.log(`行${index}: "${line}" → 匹配:`, match);
+        
+        if (match) {
+          const quantity = parseInt(match[1]);
+          const name = match[2].trim();
+          console.log(`  数量: ${quantity}, 名称: "${name}"`);
+          
+          // 移除数量限制检查，允许任意数量（1-4 会用于单张卡，但 6 Island 是 6 张相同的卡）
+          if (quantity > 0 && name) {
+            cards.push({ quantity, name });
+          }
+        }
+      });
+
+      console.log('解析结果:', cards);
+      return cards;
+    }
+
+    // 导入单张卡牌
+    async function importCard(card, area) {
+      try {
+        // 先尝试英文精确搜索
+        let response = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(card.name)}`);
+        let data = await response.json();
+
+        // 如果英文失败，尝试中文搜索
+        if (data.object === 'error') {
+          response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(card.name)}&unique=prints`);
+          const searchData = await response.json();
+          if (searchData.data && searchData.data.length > 0) {
+            data = searchData.data[0];
+          }
+        }
+
+        if (data.object === 'card') {
+          const targetDeck = area === 'main' ? deck.main : deck.side;
+          const existing = targetDeck.find(c => c.id === data.id);
+          
+          // 检查是否是基本地
+          const isBasicLand = data.type_line && data.type_line.includes('Basic Land');
+          const maxQuantity = isBasicLand ? 99 : 4;
+          
+          // 获取价格（优先 USD，其次 EUR）
+          const price = parseFloat(data.prices?.usd || data.prices?.usd_foil || data.prices?.eur || '0') || 0;
+          
+          if (existing) {
+            existing.quantity = Math.min(existing.quantity + card.quantity, maxQuantity);
+          } else {
+            targetDeck.push({
+              id: data.id,
+              name: data.name,
+              type_line: data.type_line,
+              mana_cost: data.mana_cost,
+              image_uris: data.image_uris,
+              quantity: Math.min(card.quantity, maxQuantity),
+              price: price,
+              set: data.set,
+              set_name: data.set_name,
+              collector_number: data.collector_number
+            });
+          }
+          return true;
+        } else {
+          console.warn('卡牌未找到:', card.name, data);
+        }
+      } catch (error) {
+        console.error('导入失败:', card.name, error);
+      }
+      return false;
+    }
+
+    // 显示提示
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    // 点击弹窗外部关闭
+    document.getElementById('importModal').addEventListener('click', (e) => {
+      if (e.target.id === 'importModal') {
+        closeImportModal();
+      }
+    });
+
+    // 回车搜索
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchCards();
+      }
+    });
+
+    // 显示版本选择器
+    let currentSelectedCard = null;
+    let currentSelectedArea = null;
+
+    async function showVersionSelector(cardId, cardName, area) {
+      currentSelectedCard = cardId;
+      currentSelectedArea = area;
+      
+      // 检查 cardId 是否有效
+      if (!cardId || cardId === 'undefined' || cardId === 'null') {
+        showToast('卡牌 ID 无效，请重新添加此卡', 'error');
+        return;
+      }
+      
+      document.getElementById('versionModalTitle').textContent = `选择版本：${cardName}`;
+      document.getElementById('versionModal').style.display = 'flex';
+      document.getElementById('versionsGrid').innerHTML = '';
+      document.getElementById('versionModalLoading').style.display = 'block';
+
+      try {
+        // 获取该卡牌的所有版本
+        const response = await fetch(`https://api.scryfall.com/cards/${cardId}`);
+        const card = await response.json();
+
+        if (card.object === 'error') {
+          console.error('卡牌 API 错误:', card);
+          document.getElementById('versionsGrid').innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">❌</div>
+              <div class="empty-state-text">卡牌数据无效：${card.details || '未知错误'}</div>
+            </div>
+          `;
+        } else if (card.prints_search_uri) {
+          // 获取所有版本
+          const printsResponse = await fetch(card.prints_search_uri);
+          const printsData = await printsResponse.json();
+          displayVersions(printsData.data || []);
+        } else {
+          // 只有一个版本
+          displayVersions([card]);
+        }
+      } catch (error) {
+        console.error('获取版本失败:', error);
+        document.getElementById('versionsGrid').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">❌</div>
+            <div class="empty-state-text">加载失败，请重试<br><small>${error.message}</small></div>
+          </div>
+        `;
+      }
+
+      document.getElementById('versionModalLoading').style.display = 'none';
+    }
+
+    // 显示版本列表
+    function displayVersions(versions) {
+      const grid = document.getElementById('versionsGrid');
+      
+      if (versions.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-text">未找到其他版本</div>
+          </div>
+        `;
+        return;
+      }
+
+      // 找到当前选中的版本
+      const currentCard = deck[currentSelectedArea === 'main' ? 'main' : 'side']
+        .find(c => c.id === currentSelectedCard);
+      const currentIsFoil = currentCard?.foil || false;
+
+      // 检查是否有 Foil 和 Non-foil 版本
+      const hasFoil = versions.some(v => v.foil);
+      const hasNonFoil = versions.some(v => v.nonfoil);
+
+      // 获取当前版本的所有 printings
+      const currentVersion = versions.find(v => v.id === currentSelectedCard) || versions[0];
+      const foilPrice = parseFloat(currentVersion.prices?.usd_foil || '0') || 0;
+      const nonFoilPrice = parseFloat(currentVersion.prices?.usd || '0') || 0;
+
+      let foilOptions = '';
+      if (hasFoil || hasNonFoil) {
+        foilOptions = `
+          <div class="foil-toggle">
+            <div class="foil-option ${!currentIsFoil && hasNonFoil ? 'active' : ''} ${!hasNonFoil ? 'disabled' : ''}" 
+                 onclick="${hasNonFoil ? `setFoil(false)` : ''}">
+              <div class="foil-option-label">⚪ Non-foil</div>
+              <div class="foil-option-price">${hasNonFoil ? (nonFoilPrice > 0 ? '$' + nonFoilPrice.toFixed(2) : '暂无价格') : '此版本无 Non-foil'}</div>
+              ${!currentIsFoil && hasNonFoil ? '<div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">✅ 当前</div>' : ''}
+            </div>
+            <div class="foil-option ${currentIsFoil && hasFoil ? 'active' : ''} ${!hasFoil ? 'disabled' : ''}" 
+                 onclick="${hasFoil ? `setFoil(true)` : ''}">
+              <div class="foil-option-label">✨ Foil</div>
+              <div class="foil-option-price">${hasFoil ? (foilPrice > 0 ? '$' + foilPrice.toFixed(2) : '暂无价格') : '此版本无 Foil'}</div>
+              ${currentIsFoil && hasFoil ? '<div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">✅ 当前</div>' : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      grid.innerHTML = `
+        ${foilOptions}
+        ${versions.map(version => {
+          const price = currentIsFoil 
+            ? (parseFloat(version.prices?.usd_foil || '0') || 0)
+            : (parseFloat(version.prices?.usd || '0') || 0);
+          const isSelected = version.id === currentSelectedCard;
+          const rarityMap = {
+            'common': 'common',
+            'uncommon': 'uncommon',
+            'rare': 'rare',
+            'mythic': 'mythic',
+            'basic land': 'common'
+          };
+          const rarityClass = rarityMap[version.rarity] || 'common';
+          const hasThisVersionFoil = version.foil;
+          const hasThisVersionNonFoil = version.nonfoil;
+
+          return `
+            <div class="version-card ${isSelected ? 'selected' : ''}" onclick="selectVersion('${version.id}')">
+              <img class="version-image" src="${version.image_uris?.normal || 'https://cards.scryfall.io/back.jpg'}" alt="${version.name}">
+              <div class="version-set">${version.set_name} (${version.set.toUpperCase()})</div>
+              <div class="version-rarity rarity-${rarityClass}">${version.rarity}</div>
+              <div style="font-size: 0.625rem; color: var(--text-muted); margin: 0.25rem 0;">
+                ${hasThisVersionFoil ? '✨ Foil' : ''}${hasThisVersionFoil && hasThisVersionNonFoil ? ' | ' : ''}${hasThisVersionNonFoil ? '⚪ Non-foil' : ''}
+              </div>
+              <div class="version-price">${price > 0 ? '$' + price.toFixed(2) : '暂无价格'}</div>
+              ${isSelected ? '<div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.5rem;">✅ 当前版本</div>' : ''}
+            </div>
+          `;
+        }).join('')}
+      `;
+    }
+
+    // 选择版本
+    async function selectVersion(newCardId) {
+      if (newCardId === currentSelectedCard) {
+        closeVersionModal();
+        return;
+      }
+
+      try {
+        // 获取新版本卡牌数据
+        const response = await fetch(`https://api.scryfall.com/cards/${newCardId}`);
+        const newCard = await response.json();
+
+        if (newCard.object !== 'card') {
+          showToast('获取卡牌失败', 'error');
+          return;
+        }
+
+        // 更新卡组中的卡牌
+        const targetDeck = currentSelectedArea === 'main' ? deck.main : deck.side;
+        const cardIndex = targetDeck.findIndex(c => c.id === currentSelectedCard);
+        
+        if (cardIndex >= 0) {
+          const oldCard = targetDeck[cardIndex];
+          const price = parseFloat(newCard.prices?.usd || newCard.prices?.usd_foil || newCard.prices?.eur || '0') || 0;
+          
+          targetDeck[cardIndex] = {
+            ...oldCard,
+            id: newCard.id,
+            name: newCard.name,
+            image_uris: newCard.image_uris,
+            price: price,
+            set: newCard.set,
+            set_name: newCard.set_name,
+            collector_number: newCard.collector_number
+          };
+
+          updateDeckUI();
+          saveDeck();
+          showToast(`已切换到 ${newCard.set_name} 版本`, 'success');
+          closeVersionModal();
+        }
+      } catch (error) {
+        console.error('切换版本失败:', error);
+        showToast('切换失败', 'error');
+      }
+    }
+
+    // 关闭版本选择器
+    function closeVersionModal() {
+      document.getElementById('versionModal').style.display = 'none';
+      currentSelectedCard = null;
+      currentSelectedArea = null;
+    }
+
+    // 点击弹窗外部关闭版本选择器
+    document.getElementById('versionModal').addEventListener('click', (e) => {
+      if (e.target.id === 'versionModal') {
+        closeVersionModal();
+      }
+    });
+
+    // 切换 Foil/Non-foil
+    function setFoil(isFoil) {
+      const targetDeck = currentSelectedArea === 'main' ? deck.main : deck.side;
+      const card = targetDeck.find(c => c.id === currentSelectedCard);
+      
+      if (!card) return;
+
+      // 获取当前版本卡牌数据来检查是否有 Foil/Non-foil
+      fetch(`https://api.scryfall.com/cards/${card.id}`)
+        .then(res => res.json())
+        .then(versionData => {
+          const hasFoil = versionData.foil;
+          const hasNonFoil = versionData.nonfoil;
+
+          if ((isFoil && !hasFoil) || (!isFoil && !hasNonFoil)) {
+            showToast(`此版本没有${isFoil ? 'Foil' : 'Non-foil'}`, 'error');
+            return;
+          }
+
+          // 更新 foil 状态和价格
+          card.foil = isFoil;
+          const price = isFoil 
+            ? (parseFloat(versionData.prices?.usd_foil || '0') || 0)
+            : (parseFloat(versionData.prices?.usd || '0') || 0);
+          card.price = price;
+
+          updateDeckUI();
+          saveDeck();
+          showToast(`已切换到${isFoil ? ' Foil' : ' Non-foil'}`, 'success');
+          
+          // 重新显示版本列表以更新 UI
+          fetch(`https://api.scryfall.com/cards/${currentSelectedCard}`)
+            .then(res => res.json())
+            .then(card => {
+              if (card.prints_search_uri) {
+                fetch(card.prints_search_uri)
+                  .then(res => res.json())
+                  .then(prints => displayVersions(prints.data || []));
+              }
+            });
+        })
+        .catch(err => {
+          console.error('切换 Foil 失败:', err);
+          showToast('切换失败', 'error');
+        });
+    }
+
+    // 在卡组列表中切换 Foil
+    function toggleFoil(cardId, area) {
+      const targetDeck = area === 'main' ? deck.main : deck.side;
+      const card = targetDeck.find(c => c.id === cardId);
+      
+      if (!card) return;
+
+      // 切换 foil 状态
+      card.foil = !card.foil;
+      const isFoil = card.foil;
+
+      // 获取价格
+      fetch(`https://api.scryfall.com/cards/${cardId}`)
+        .then(res => res.json())
+        .then(versionData => {
+          const hasFoil = versionData.foil;
+          const hasNonFoil = versionData.nonfoil;
+
+          if ((isFoil && !hasFoil) || (!isFoil && !hasNonFoil)) {
+            // 这个版本没有所需的类型，切换回来
+            card.foil = !isFoil;
+            showToast(`此版本没有${isFoil ? 'Foil' : 'Non-foil'}`, 'error');
+            updateDeckUI();
+            return;
+          }
+
+          const price = isFoil 
+            ? (parseFloat(versionData.prices?.usd_foil || '0') || 0)
+            : (parseFloat(versionData.prices?.usd || '0') || 0);
+          card.price = price;
+
+          updateDeckUI();
+          saveDeck();
+          showToast(`已切换到${isFoil ? ' Foil' : ' Non-foil'}`, 'success');
+        })
+        .catch(err => {
+          console.error('切换 Foil 失败:', err);
+          card.foil = !isFoil; // 恢复原状态
+          updateDeckUI();
+          showToast('切换失败', 'error');
+        });
+    }
+  </script>
+</body>
+</html>
