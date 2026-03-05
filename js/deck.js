@@ -425,10 +425,28 @@ function saveCurrentDeck() {
     return;
   }
 
+  // 检查是否已有同名卡组
+  const savedDecks = getSavedDecks();
+  if (savedDecks[name]) {
+    const oldDeck = savedDecks[name];
+    const oldMainCount = oldDeck.main.reduce((sum, c) => sum + c.quantity, 0);
+    const oldSideCount = oldDeck.side.reduce((sum, c) => sum + c.quantity, 0);
+    const newMainCount = deck.main.reduce((sum, c) => sum + c.quantity, 0);
+    const newSideCount = deck.side.reduce((sum, c) => sum + c.quantity, 0);
+    const date = new Date(oldDeck.updatedAt).toLocaleString('zh-CN', { 
+      month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    });
+    
+    const confirmMsg = `⚠️ 发现同名卡组 "${name}"\n\n旧版本：\n- 主牌 ${oldMainCount} 张\n- 备牌 ${oldSideCount} 张\n- 保存时间：${date}\n\n新版本：\n- 主牌 ${newMainCount} 张\n- 备牌 ${newSideCount} 张\n\n确定要覆盖吗？`;
+    
+    if (!confirm(confirmMsg)) {
+      return; // 用户取消覆盖
+    }
+  }
+
   deck.name = name;
   updateDeckNameDisplay();
 
-  const savedDecks = getSavedDecks();
   const timestamp = new Date().toISOString();
   
   savedDecks[name] = {
