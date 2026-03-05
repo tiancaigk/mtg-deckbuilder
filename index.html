@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>万智牌卡组构建器 | MTG Deck Builder</title>
-  <link rel="stylesheet" href="css/main.css?v=202603052105">
+  <link rel="stylesheet" href="css/main.css?v=202603052200">
   <meta name="description" content="万智牌卡组构建工具 - 支持中文搜索、云端保存、价格统计">
 </head>
 <body>
@@ -39,12 +39,7 @@
           🔍 搜索
         </button>
       </div>
-      <div class="search-options">
-        <label class="checkbox-label">
-          <input type="checkbox" id="chineseOnlyCheckbox">
-          <span>只显示中文版</span>
-        </label>
-      </div>
+
       <div class="search-filters" id="colorFilters">
         <div class="filter-chip active" data-color="">
           <span>全部</span>
@@ -79,18 +74,21 @@
         <div style="display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 0;">
           <h2 class="panel-title" style="margin: 0;">我的卡组</h2>
           <span id="deckNameDisplay" style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
-          <div style="display: flex; gap: 1.5rem; margin-left: auto;">
-            <div class="deck-stat" style="text-align: center;">
+          <div style="display: flex; gap: 1rem; margin-left: auto; align-items: center;">
+            <div class="deck-stat">
               <div class="deck-stat-value" id="mainCount">0</div>
               <div class="deck-stat-label">主牌</div>
             </div>
-            <div class="deck-stat" style="text-align: center;">
+            <div class="deck-stat">
               <div class="deck-stat-value" id="sideCount">0</div>
               <div class="deck-stat-label">备牌</div>
             </div>
-            <div class="deck-stat" style="text-align: center;">
+            <div class="deck-stat" style="display: flex; flex-direction: column; align-items: center;">
               <div class="deck-stat-value price" id="totalPrice">$0.00</div>
-              <div class="deck-stat-label">总价</div>
+              <div class="deck-stat-label" style="display: inline-flex; align-items: center; gap: 0.25rem; margin-top: 0.25rem;">
+                <button class="currency-toggle" onclick="window.mtgDeck.toggleCurrency()" title="切换货币">💱</button>
+                总价
+              </div>
             </div>
           </div>
         </div>

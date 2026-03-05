@@ -9,9 +9,6 @@ async function searchCards() {
   const query = document.getElementById('searchInput')?.value.trim();
   if (!query) return;
 
-  const checkbox = document.getElementById('chineseOnlyCheckbox');
-  const chineseOnly = checkbox?.checked || false;
-  
   const resultsDiv = document.getElementById('searchResults');
   if (!resultsDiv) return;
 
@@ -27,7 +24,7 @@ async function searchCards() {
     let data;
     
     if (hasChinese) {
-      data = await searchChinese(query, chineseOnly);
+      data = await searchChinese(query);
     } else {
       data = await searchEnglish(query);
     }
@@ -55,35 +52,26 @@ async function searchCards() {
 }
 
 // 中文搜索
-async function searchChinese(query, chineseOnly) {
-  let data;
+async function searchChinese(query) {
+  console.log('🔍 中文搜索（优先中文版）');
+  const response = await fetch(
+    `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}+lang:cs&unique=prints&order=set`
+  );
+  let data = await response.json();
   
-  if (chineseOnly) {
-    console.log('🔍 中文搜索（只显示中文版）');
-    const response = await fetch(
-      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}+lang:cs&unique=prints&order=set`
+  // 结果较少时补充搜索所有版本
+  if (data.total_cards < 5) {
+    console.log('🔍 结果较少，补充搜索所有版本');
+    const allResponse = await fetch(
+      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=set`
     );
-    data = await response.json();
-  } else {
-    console.log('🔍 中文搜索（优先中文版）');
-    const response = await fetch(
-      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}+lang:cs&unique=prints&order=set`
-    );
-    data = await response.json();
+    const allData = await allResponse.json();
     
-    if (data.total_cards < 5) {
-      console.log('🔍 结果较少，补充搜索所有版本');
-      const allResponse = await fetch(
-        `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=set`
-      );
-      const allData = await allResponse.json();
-      
-      if (allData.total_cards > 0) {
-        const existingIds = new Set(data.data.map(c => c.id));
-        const newCards = allData.data.filter(c => !existingIds.has(c.id));
-        data.data = [...data.data, ...newCards];
-        data.total_cards = data.data.length;
-      }
+    if (allData.total_cards > 0) {
+      const existingIds = new Set(data.data.map(c => c.id));
+      const newCards = allData.data.filter(c => !existingIds.has(c.id));
+      data.data = [...data.data, ...newCards];
+      data.total_cards = data.data.length;
     }
   }
   
@@ -148,8 +136,8 @@ function displaySearchResults(cards) {
     
     const manaCost = parseManaCost(card.mana_cost);
     return `
-      <div class="card-item" onclick="window.mtgDeck.addToDeck('${card.id}', '${displayName.replace(/'/g, "\\'")}')">
-        <img class="card-image" src="${imageUrl}" alt="${displayName}" loading="lazy">
+      <div class="card-item">
+        <img class="card-image" src="${imageUrl}" alt="${displayName}" loading="lazy" onclick="event.stopPropagation()">
         <div class="card-details">
           <div class="card-name">${displayName}</div>
           <div class="card-type">${displayType}</div>
@@ -157,7 +145,10 @@ function displaySearchResults(cards) {
             ${manaCost.map(m => `<div class="mana-symbol mana-${m.toLowerCase()}">${m}</div>`).join('')}
           </div>
         </div>
-        <button class="add-btn">+ ${currentSearchArea === 'main' ? '主牌' : '备牌'}</button>
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+          <button class="add-btn" onclick="window.mtgDeck.addToDeck('${card.id}', '${displayName.replace(/'/g, "\\'")}', 'main')">+ 主牌</button>
+          <button class="add-btn" onclick="window.mtgDeck.addToDeck('${card.id}', '${displayName.replace(/'/g, "\\'")}', 'side')" style="background: var(--warning); font-size: 0.75rem; padding: 0.375rem 0.75rem;">+ 备牌</button>
+        </div>
       </div>
     `;
   }).join('');

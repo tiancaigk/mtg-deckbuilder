@@ -13,6 +13,8 @@ let currentArea = 'main';
 let currentSelectedCard = null;
 let currentSelectedArea = null;
 let saveDebounceTimer = null;
+let currentCurrency = 'USD'; // 'USD' or 'CNY'
+let exchangeRate = 7.25; // 默认汇率，会动态获取
 
 // ============ 卡组基础操作 ============
 
@@ -196,10 +198,10 @@ function updateDeckUI() {
   document.getElementById('sideTotalCount').textContent = sideTotal;
 
   const sideCountEl = document.getElementById('sideTotalCount');
-  sideCountEl.className = 'deck-area-count';
-  if (sideTotal > 15) sideCountEl.classList.add('error');
-  else if (sideTotal === 15) sideCountEl.classList.add('success');
-  else sideCountEl.classList.add('warning');
+  sideCountEl.className = 'deck-area-count sideboard';
+  if (sideTotal > 15) {
+    sideCountEl.classList.add('error');
+  }
 
   const sideHeaderEl = document.getElementById('sideCount');
   sideHeaderEl.className = 'deck-stat-value';
@@ -210,7 +212,14 @@ function updateDeckUI() {
   // 价格
   const mainPrice = deck.main.reduce((sum, c) => sum + (c.price || 0) * c.quantity, 0);
   const sidePrice = deck.side.reduce((sum, c) => sum + (c.price || 0) * c.quantity, 0);
-  document.getElementById('totalPrice').textContent = `$${(mainPrice + sidePrice).toFixed(2)}`;
+  const totalPrice = mainPrice + sidePrice;
+  
+  if (currentCurrency === 'USD') {
+    document.getElementById('totalPrice').textContent = `$${totalPrice.toFixed(2)}`;
+  } else {
+    const cnyPrice = totalPrice * exchangeRate;
+    document.getElementById('totalPrice').textContent = `¥${cnyPrice.toFixed(2)}`;
+  }
 
   updateManaCurve('main');
   updateColorDistribution('main');
@@ -876,7 +885,19 @@ function closeVersionModal() {
 // ============ 初始化 ============
 
 function init() {
+  // 加载保存的货币设置
+  const savedCurrency = localStorage.getItem('mtg-currency');
+  if (savedCurrency) {
+    currentCurrency = savedCurrency;
+    const btn = document.querySelector('.currency-toggle');
+    if (btn) {
+      btn.textContent = currentCurrency === 'USD' ? '💱' : '💲';
+      btn.title = currentCurrency === 'USD' ? '切换到人民币' : '切换到美元';
+    }
+  }
+  
   loadDeck();
+  fetchExchangeRate(); // 获取实时汇率
   updateDeckUI();
   updateDeckNameDisplay();
   
@@ -930,7 +951,36 @@ window.mtgDeck = {
   setFoil,
   selectVersion,
   closeVersionModal,
-  init
+  init,
+  toggleCurrency,
+  fetchExchangeRate
 };
+
+// ============ 货币切换功能 ============
+
+function toggleCurrency() {
+  currentCurrency = currentCurrency === 'USD' ? 'CNY' : 'USD';
+  updateDeckUI();
+  localStorage.setItem('mtg-currency', currentCurrency);
+  
+  const btn = document.querySelector('.currency-toggle');
+  if (btn) {
+    btn.textContent = currentCurrency === 'USD' ? '💱' : '💲';
+    btn.title = currentCurrency === 'USD' ? '切换到人民币' : '切换到美元';
+  }
+}
+
+async function fetchExchangeRate() {
+  try {
+    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+    const data = await response.json();
+    exchangeRate = data.rates.CNY || 7.25;
+    console.log('💱 汇率更新:', exchangeRate);
+    updateDeckUI();
+  } catch (error) {
+    console.error('获取汇率失败:', error);
+    exchangeRate = 7.25; // 使用默认汇率
+  }
+}
 
 console.log('✅ Deck module loaded');

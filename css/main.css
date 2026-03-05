@@ -244,11 +244,44 @@ body::before {
   background-clip: text;
 }
 
+.deck-stat {
+  text-align: center;
+  min-width: 80px;
+}
+
+.deck-stat-value {
+  white-space: nowrap;
+}
+
 .deck-stat-value.price {
   background: linear-gradient(135deg, var(--success), #34D399);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-size: 1.25rem;
+  min-width: 80px;
+  display: inline-block;
+}
+
+.currency-toggle {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  color: var(--text-secondary);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.currency-toggle:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-primary);
 }
 
 .deck-stat-label {
@@ -257,6 +290,11 @@ body::before {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.deck-stat {
+  min-width: 80px;
 }
 
 .deck-manage-btn {
@@ -455,20 +493,14 @@ body::before {
   overflow: hidden;
 }
 
-.card-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), transparent);
-  opacity: 0;
-  transition: opacity var(--transition-base);
+.card-item:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-glow);
 }
 
-.card-item:hover::before {
-  opacity: 1;
+.card-item .add-btn {
+  white-space: nowrap;
 }
 
 .card-item:hover {
@@ -588,6 +620,7 @@ body::before {
   background: linear-gradient(135deg, #1a1f2e 0%, #2d3748 100%);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
   z-index: 100;
+  flex-wrap: nowrap;
 }
 
 .panel-title {
@@ -598,6 +631,8 @@ body::before {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-right: 1.5rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .panel-actions {
@@ -714,6 +749,10 @@ body::before {
 }
 .deck-area-count.success { 
   background: linear-gradient(135deg, var(--success), #059669);
+}
+
+.deck-area-count.sideboard { 
+  background: linear-gradient(135deg, var(--warning), #D97706);
 }
 
 .deck-area-limit {
