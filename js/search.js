@@ -20,13 +20,21 @@ async function searchCards() {
   `;
 
   try {
-    const hasChinese = /[\u4e00-\u9fa5]/.test(query);
+    // 检测是否为系列 + 编号格式（如 "BIG 36"）
+    const setNumberMatch = parseSetNumber(query);
     let data;
     
-    if (hasChinese) {
-      data = await searchChinese(query);
+    if (setNumberMatch) {
+      // 系列编号精确搜索
+      data = await searchSetNumber(setNumberMatch.set, setNumberMatch.number);
     } else {
-      data = await searchEnglish(query);
+      const hasChinese = /[\u4e00-\u9fa5]/.test(query);
+      
+      if (hasChinese) {
+        data = await searchChinese(query);
+      } else {
+        data = await searchEnglish(query);
+      }
     }
 
     if (data.total_cards === 0 || (data.data && data.data.length === 0)) {
@@ -49,6 +57,24 @@ async function searchCards() {
       </div>
     `;
   }
+}
+
+// 解析系列 + 编号格式（如 "BIG 36"）
+function parseSetNumber(query) {
+  const match = query.match(/^([A-Za-z0-9]+)\s+(\d+)$/);
+  if (match) {
+    return { set: match[1].toLowerCase(), number: match[2] };
+  }
+  return null;
+}
+
+// 系列 + 编号精确搜索
+async function searchSetNumber(setCode, collectorNumber) {
+  console.log(`🔍 系列编号搜索：${setCode.toUpperCase()} ${collectorNumber}`);
+  const response = await fetch(
+    `https://api.scryfall.com/cards/search?q=e:${setCode}+cn:${collectorNumber}&unique=prints`
+  );
+  return await response.json();
 }
 
 // 中文搜索
