@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>万智牌卡组构建器 | MTG Deck Builder</title>
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/main.css?v=202603052105">
   <meta name="description" content="万智牌卡组构建工具 - 支持中文搜索、云端保存、价格统计">
 </head>
 <body>
@@ -17,6 +17,11 @@
       </div>
       <div class="deck-info">
         <button class="deck-manage-btn" onclick="window.mtgDeck.showDeckManager()" title="卡组管理">📁</button>
+        <div class="deck-actions">
+          <button class="action-btn" onclick="window.mtgDeck.clearDeck()" title="清空卡组">🗑️</button>
+          <button class="action-btn" onclick="window.mtgDeck.showImportModal()" title="导入卡组">📥</button>
+          <button class="action-btn export" onclick="window.mtgDeck.exportDeck()" title="导出卡组">📤</button>
+        </div>
         <div class="auth-buttons">
           <button class="auth-btn" onclick="window.mtgAuthUI.openAuthModal()">🔐 登录/注册</button>
         </div>
@@ -71,30 +76,23 @@
     <!-- 右侧：卡组面板 -->
     <aside class="deck-panel">
       <div class="panel-header">
-        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0;">
+        <div style="display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 0;">
           <h2 class="panel-title" style="margin: 0;">我的卡组</h2>
           <span id="deckNameDisplay" style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
-        </div>
-        <div class="panel-actions">
-          <button class="action-btn" onclick="window.mtgDeck.clearDeck()" title="清空卡组">🗑️</button>
-          <button class="action-btn" onclick="window.mtgDeck.showImportModal()" title="导入卡组">📥</button>
-          <button class="action-btn export" onclick="window.mtgDeck.exportDeck()" title="导出卡组">📤</button>
-        </div>
-      </div>
-
-      <!-- 卡组统计 -->
-      <div style="display: flex; gap: 1.5rem; padding: 1rem; background: var(--bg); border-radius: 8px; margin-bottom: 1.5rem;">
-        <div class="deck-stat" style="text-align: center; flex: 1;">
-          <div class="deck-stat-value" id="mainCount">0</div>
-          <div class="deck-stat-label">主牌</div>
-        </div>
-        <div class="deck-stat" style="text-align: center; flex: 1;">
-          <div class="deck-stat-value" id="sideCount">0</div>
-          <div class="deck-stat-label">备牌</div>
-        </div>
-        <div class="deck-stat" style="text-align: center; flex: 1;">
-          <div class="deck-stat-value price" id="totalPrice">$0.00</div>
-          <div class="deck-stat-label">总价</div>
+          <div style="display: flex; gap: 1.5rem; margin-left: auto;">
+            <div class="deck-stat" style="text-align: center;">
+              <div class="deck-stat-value" id="mainCount">0</div>
+              <div class="deck-stat-label">主牌</div>
+            </div>
+            <div class="deck-stat" style="text-align: center;">
+              <div class="deck-stat-value" id="sideCount">0</div>
+              <div class="deck-stat-label">备牌</div>
+            </div>
+            <div class="deck-stat" style="text-align: center;">
+              <div class="deck-stat-value price" id="totalPrice">$0.00</div>
+              <div class="deck-stat-label">总价</div>
+            </div>
+          </div>
         </div>
       </div>
 
