@@ -28,12 +28,20 @@ async function searchCards() {
       // 系列编号精确搜索
       data = await searchSetNumber(setNumberMatch.set, setNumberMatch.number);
     } else {
-      const hasChinese = /[\u4e00-\u9fa5]/.test(query);
+      // 检测是否为"卡名 + 系列"组合搜索（如 "莲花瓣 mb1" 或 "mb1 莲花瓣"）
+      const cardWithSetMatch = parseCardWithSet(query);
       
-      if (hasChinese) {
-        data = await searchChinese(query);
+      if (cardWithSetMatch) {
+        // 卡名 + 系列组合搜索
+        data = await searchCardWithSet(cardWithSetMatch.cardName, cardWithSetMatch.setCode);
       } else {
-        data = await searchEnglish(query);
+        const hasChinese = /[\u4e00-\u9fa5]/.test(query);
+        
+        if (hasChinese) {
+          data = await searchChinese(query);
+        } else {
+          data = await searchEnglish(query);
+        }
       }
     }
 
@@ -75,6 +83,66 @@ async function searchSetNumber(setCode, collectorNumber) {
     `https://api.scryfall.com/cards/search?q=e:${setCode}+cn:${collectorNumber}&unique=prints`
   );
   return await response.json();
+}
+
+// 解析"卡名 + 系列"组合搜索（如 "莲花瓣 mb1" 或 "mb1 莲花瓣"）
+function parseCardWithSet(query) {
+  // 常见系列代码正则（3-4 位字母数字）
+  const setCodePattern = /\b([A-Z]{2,4}|[A-Z]{1,3}\d{1,2})\b/i;
+  
+  // 尝试匹配系列代码
+  const setMatch = query.match(setCodePattern);
+  if (!setMatch) return null;
+  
+  const setCode = setMatch[1].toLowerCase();
+  // 移除系列代码，剩下的作为卡名
+  const cardName = query.replace(setCodePattern, '').trim();
+  
+  // 卡名不能为空
+  if (!cardName) return null;
+  
+  console.log(`🔍 解析组合搜索：卡名="${cardName}" 系列="${setCode.toUpperCase()}"`);
+  return { cardName, setCode };
+}
+
+// 卡名 + 系列组合搜索
+async function searchCardWithSet(cardName, setCode) {
+  console.log(`🔍 组合搜索：${cardName} + set:${setCode.toUpperCase()}`);
+  
+  const hasChinese = /[\u4e00-\u9fa5]/.test(cardName);
+  let searchQuery;
+  
+  if (hasChinese) {
+    // 中文卡名 + 系列
+    searchQuery = `${encodeURIComponent(cardName)}+set:${setCode}`;
+    console.log('🔍 中文 + 系列搜索');
+  } else {
+    // 英文卡名 + 系列
+    searchQuery = `!"${encodeURIComponent(cardName)}"+set:${setCode}`;
+    console.log('🔍 英文 + 系列精确搜索');
+  }
+  
+  const response = await fetch(
+    `https://api.scryfall.com/cards/search?q=${searchQuery}&unique=prints&order=set`
+  );
+  let data = await response.json();
+  
+  // 如果结果为 0，尝试 fuzzy 匹配
+  if (data.total_cards === 0) {
+    console.log('🔍 组合搜索无结果，尝试 fuzzy 匹配');
+    const fuzzyQuery = hasChinese 
+      ? `${encodeURIComponent(cardName)}+set:${setCode}`
+      : `fuzzy:${encodeURIComponent(cardName)}+set:${setCode}`;
+    
+    const fuzzyResponse = await fetch(
+      `https://api.scryfall.com/cards/search?q=${fuzzyQuery}&unique=prints`
+    );
+    if (fuzzyResponse.ok) {
+      data = await fuzzyResponse.json();
+    }
+  }
+  
+  return data;
 }
 
 // 中文搜索
@@ -272,6 +340,8 @@ window.mtgSearch = {
   searchCards,
   searchChinese,
   searchEnglish,
+  searchCardWithSet,
+  parseCardWithSet,
   displaySearchResults,
   setupColorFilters,
   setupSearchEnterKey,
@@ -281,4 +351,4 @@ window.mtgSearch = {
   setupCardPreview
 };
 
-console.log('✅ Search module loaded');
+console.log('✅ Search module loaded (with card+set search)');
