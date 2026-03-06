@@ -159,11 +159,14 @@ function displaySearchResults(cards) {
                     card.card_faces?.[0]?.image_uris?.normal || 
                     card.image_uris?.small ||
                     'https://cards.scryfall.io/back.jpg';
+    const largeImageUrl = card.image_uris?.large || card.image_uris?.normal || imageUrl;
     
     const manaCost = parseManaCost(card.mana_cost);
     return `
       <div class="card-item">
-        <img class="card-image" src="${imageUrl}" alt="${displayName}" loading="lazy" onclick="event.stopPropagation()">
+        <img class="card-image" src="${imageUrl}" alt="${displayName}" loading="lazy" 
+             onclick="window.mtgSearch.toggleCardPreview('${largeImageUrl}')"
+             style="cursor: zoom-in;">
         <div class="card-details">
           <div class="card-name">${displayName}</div>
           <div class="card-type">${displayType}</div>
@@ -172,8 +175,8 @@ function displaySearchResults(cards) {
           </div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-          <button class="add-btn" onclick="window.mtgDeck.addToDeck('${card.id}', '${displayName.replace(/'/g, "\\'")}', 'main')">+ 主牌</button>
-          <button class="add-btn" onclick="window.mtgDeck.addToDeck('${card.id}', '${displayName.replace(/'/g, "\\'")}', 'side')" style="background: var(--warning); font-size: 0.75rem; padding: 0.375rem 0.75rem;">+ 备牌</button>
+          <button class="add-btn" onclick="event.stopPropagation(); window.mtgDeck.addToDeck('${card.id}', '${displayName.replace(/'/g, "\\'")}', 'main')">+ 主牌</button>
+          <button class="add-btn" onclick="event.stopPropagation(); window.mtgDeck.addToDeck('${card.id}', '${displayName.replace(/'/g, "\\'")}', 'side')" style="background: var(--warning); font-size: 0.75rem; padding: 0.375rem 0.75rem;">+ 备牌</button>
         </div>
       </div>
     `;
@@ -202,6 +205,68 @@ function setupSearchEnterKey() {
   }
 }
 
+// 初始化卡牌预览
+document.addEventListener('DOMContentLoaded', () => {
+  setupCardPreview();
+});
+
+// 切换卡牌大图预览（点击显示/隐藏）
+let isPreviewShowing = false;
+
+function toggleCardPreview(imageUrl) {
+  if (isPreviewShowing) {
+    hideCardPreview();
+  } else {
+    showCardPreview(imageUrl);
+  }
+}
+
+function showCardPreview(imageUrl) {
+  const preview = document.getElementById('cardPreview');
+  const backdrop = document.getElementById('cardPreviewBackdrop');
+  
+  if (preview && backdrop) {
+    preview.src = imageUrl;
+    preview.classList.add('show');
+    backdrop.classList.add('show');
+    isPreviewShowing = true;
+  }
+}
+
+function hideCardPreview() {
+  const preview = document.getElementById('cardPreview');
+  const backdrop = document.getElementById('cardPreviewBackdrop');
+  
+  if (preview && backdrop) {
+    preview.classList.remove('show');
+    backdrop.classList.remove('show');
+    isPreviewShowing = false;
+  }
+}
+
+// 设置卡牌预览事件
+function setupCardPreview() {
+  const backdrop = document.getElementById('cardPreviewBackdrop');
+  const preview = document.getElementById('cardPreview');
+  
+  if (backdrop) {
+    backdrop.addEventListener('click', toggleCardPreview);
+  }
+  
+  if (preview) {
+    preview.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+  
+  // ESC 键关闭
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      hideCardPreview();
+    }
+  });
+}
+
 // 导出到全局
 window.mtgSearch = {
   searchCards,
@@ -209,7 +274,11 @@ window.mtgSearch = {
   searchEnglish,
   displaySearchResults,
   setupColorFilters,
-  setupSearchEnterKey
+  setupSearchEnterKey,
+  showCardPreview,
+  hideCardPreview,
+  toggleCardPreview,
+  setupCardPreview
 };
 
 console.log('✅ Search module loaded');
