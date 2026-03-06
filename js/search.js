@@ -113,36 +113,30 @@ async function searchCardWithSet(cardName, setCode) {
   let searchQuery;
   
   if (hasChinese) {
-    // 中文卡名 + 系列
-    searchQuery = `${encodeURIComponent(cardName)}+set:${setCode}`;
-    console.log('🔍 中文 + 系列搜索');
-  } else {
-    // 英文卡名 + 系列
-    searchQuery = `!"${encodeURIComponent(cardName)}"+set:${setCode}`;
-    console.log('🔍 英文 + 系列精确搜索');
-  }
-  
-  const response = await fetch(
-    `https://api.scryfall.com/cards/search?q=${searchQuery}&unique=prints&order=set`
-  );
-  let data = await response.json();
-  
-  // 如果结果为 0，尝试 fuzzy 匹配
-  if (data.total_cards === 0) {
-    console.log('🔍 组合搜索无结果，尝试 fuzzy 匹配');
-    const fuzzyQuery = hasChinese 
-      ? `${encodeURIComponent(cardName)}+set:${setCode}`
-      : `fuzzy:${encodeURIComponent(cardName)}+set:${setCode}`;
-    
-    const fuzzyResponse = await fetch(
-      `https://api.scryfall.com/cards/search?q=${fuzzyQuery}&unique=prints`
+    // 中文卡名 + 系列 - 先搜索所有版本再过滤
+    console.log('🔍 中文 + 系列搜索（先搜索后过滤）');
+    const response = await fetch(
+      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(cardName)}&unique=prints&order=set`
     );
-    if (fuzzyResponse.ok) {
-      data = await fuzzyResponse.json();
+    let data = await response.json();
+    
+    // 过滤出目标系列的版本
+    if (data.data && data.data.length > 0) {
+      const filtered = data.data.filter(c => c.set?.toLowerCase() === setCode);
+      data.data = filtered;
+      data.total_cards = filtered.length;
     }
+    return data;
+  } else {
+    // 英文卡名 + 系列 - 使用 Scryfall 语法
+    searchQuery = `!"${cardName}" set:${setCode}`;
+    console.log('🔍 英文 + 系列精确搜索');
+    
+    const response = await fetch(
+      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchQuery)}&unique=prints`
+    );
+    return await response.json();
   }
-  
-  return data;
 }
 
 // 中文搜索
