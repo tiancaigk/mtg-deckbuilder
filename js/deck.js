@@ -257,8 +257,9 @@ function renderDeckList(cards, area) {
           </div>
         </div>
         <div class="deck-card-actions-wrapper">
-          <span class="deck-card-foil-label ${isFoil ? 'foil' : 'nonfoil'}">${isFoil ? '✨ Foil' : '⚪ Non-foil'}</span>
-          <button class="qty-btn" onclick="window.mtgDeck.toggleFoil('${card.id}', '${area}')" title="切换 Foil/Non-foil">🔄</button>
+          <button class="deck-card-foil-label ${isFoil ? 'foil' : 'nonfoil'}" onclick="window.mtgDeck.toggleFoil('${card.id}', '${area}')" title="切换 Foil/Non-foil">
+            ${isFoil ? '✨ Foil' : '⚪ Non-foil'}
+          </button>
         </div>
       </div>
     `;
@@ -850,13 +851,36 @@ function selectVersion(newCardId) {
       
       if (cardIndex >= 0) {
         const oldCard = targetDeck[cardIndex];
-        const price = parseFloat(newCard.prices?.usd || newCard.prices?.usd_foil || newCard.prices?.eur || '0') || 0;
+        const oldIsFoil = oldCard.foil || false;
+        
+        // 检查新版本是否支持旧的 Foil 状态
+        const hasFoil = newCard.foil || false;
+        const hasNonFoil = newCard.nonfoil || false;
+        
+        // 如果新版本不支持旧的 Foil 状态，自动切换到可用的
+        let newIsFoil = oldIsFoil;
+        if (oldIsFoil && !hasFoil && hasNonFoil) {
+          newIsFoil = false;
+          showToast(`此版本无 Foil，已切换到 Non-foil`, 'warning');
+        } else if (!oldIsFoil && !hasNonFoil && hasFoil) {
+          newIsFoil = true;
+          showToast(`此版本无 Non-foil，已切换到 Foil`, 'warning');
+        } else if (!hasFoil && !hasNonFoil) {
+          showToast('此版本既无 Foil 也无 Non-foil', 'error');
+          return;
+        }
+        
+        // 根据 Foil 状态选择正确的价格
+        const price = newIsFoil
+          ? (parseFloat(newCard.prices?.usd_foil || '0') || 0)
+          : (parseFloat(newCard.prices?.usd || '0') || 0);
         
         targetDeck[cardIndex] = {
           ...oldCard,
           id: newCard.id,
           name: newCard.name,
           image_uris: newCard.image_uris,
+          foil: newIsFoil,
           price: price,
           set: newCard.set,
           set_name: newCard.set_name,
